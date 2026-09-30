@@ -163,6 +163,7 @@ def init_db():
         )
     """)
 
+    # Messages table
     c.execute("""
         CREATE TABLE IF NOT EXISTS messages (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -174,6 +175,7 @@ def init_db():
         )
     """)
 
+    # Discussion topics
     c.execute("""
         CREATE TABLE IF NOT EXISTS discussions (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -185,6 +187,7 @@ def init_db():
         )
     """)
 
+    # Discussion replies
     c.execute("""
         CREATE TABLE IF NOT EXISTS discussion_replies (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -195,6 +198,7 @@ def init_db():
         )
     """)
 
+    # Support tickets
     c.execute("""
         CREATE TABLE IF NOT EXISTS support_tickets (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -208,6 +212,7 @@ def init_db():
         )
     """)
 
+    # Suggestions
     c.execute("""
         CREATE TABLE IF NOT EXISTS suggestions (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -219,6 +224,7 @@ def init_db():
         )
     """)
 
+    # Announcements
     c.execute("""
         CREATE TABLE IF NOT EXISTS announcements (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -229,6 +235,7 @@ def init_db():
         )
     """)
 
+    # Calendar Events
     c.execute("""
         CREATE TABLE IF NOT EXISTS calendar_events (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -240,6 +247,7 @@ def init_db():
         )
     """)
 
+    # Poll votes
     c.execute("""
         CREATE TABLE IF NOT EXISTS poll_votes (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -412,32 +420,32 @@ st.markdown(
     @import url('https://fonts.googleapis.com/css2?family=Merriweather:ital,wght@0,300;0,400;0,700;1,300&family=Playfair+Display:ital,wght@0,600;0,700;1,400&family=Inter:wght@400;500;600;700&display=swap');
 
     body, .stApp {
-        background-color: #FFFFFF;
-        font-family: 'Merriweather', serif;
+        background-color: #FAFAFC;
+        font-family: 'Inter', sans-serif;
         color: #2D3748;
     }
 
     .mom-header {
         background: linear-gradient(135deg, #2E1A47 0%, #153D62 100%);
-        padding: 2.2rem 2rem;
+        padding: 2rem 2rem;
         border-radius: 12px;
         color: #FFFFFF;
-        margin-bottom: 2rem;
-        box-shadow: 0 8px 24px rgba(46, 26, 71, 0.18);
+        margin-bottom: 1.5rem;
+        box-shadow: 0 6px 20px rgba(46, 26, 71, 0.15);
         border-bottom: 4px solid #B47A19;
     }
 
     .mom-header h1 {
         font-family: 'Playfair Display', serif;
-        font-size: 2.4rem;
+        font-size: 2.2rem;
         font-weight: 700;
         color: #FFFFFF !important;
-        margin: 0 0 0.4rem 0;
+        margin: 0 0 0.3rem 0;
     }
 
     .mom-header p {
         font-family: 'Merriweather', serif;
-        font-size: 1.05rem;
+        font-size: 1rem;
         color: #E0D7EA;
         margin: 0;
     }
@@ -446,14 +454,26 @@ st.markdown(
         background-color: #F3EBF9;
         color: #5B2C6F;
         font-family: 'Inter', sans-serif;
-        font-size: 0.75rem;
+        font-size: 0.72rem;
         font-weight: 700;
         text-transform: uppercase;
-        letter-spacing: 0.08em;
-        padding: 4px 14px;
+        letter-spacing: 0.06em;
+        padding: 3px 12px;
         border-radius: 50px;
         display: inline-block;
-        margin-bottom: 0.8rem;
+        margin-bottom: 0.6rem;
+    }
+
+    .mom-tag-pill {
+        background-color: #E2E8F0;
+        color: #2D3748;
+        font-family: 'Inter', sans-serif;
+        font-size: 0.75rem;
+        font-weight: 600;
+        padding: 3px 10px;
+        border-radius: 6px;
+        display: inline-block;
+        margin-right: 6px;
     }
 
     h1, h2, h3, .stHeader {
@@ -461,14 +481,35 @@ st.markdown(
         color: #2E1A47 !important;
     }
 
-    .task-card {
+    .clean-summary-card {
         background-color: #FFFFFF;
-        border: 1px solid #E0D7EA;
-        border-left: 6px solid #2E1A47;
-        border-radius: 10px;
-        padding: 1.5rem;
-        margin-bottom: 1.5rem;
-        box-shadow: 0 4px 12px rgba(46, 26, 71, 0.05);
+        border: 1px solid #E2E8F0;
+        border-left: 5px solid #2E1A47;
+        border-radius: 8px;
+        padding: 1rem 1.2rem;
+        margin-bottom: 0.8rem;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.03);
+        transition: all 0.2s ease-in-out;
+    }
+
+    .clean-summary-card:hover {
+        border-left-color: #B47A19;
+        box-shadow: 0 4px 12px rgba(46, 26, 71, 0.08);
+    }
+
+    .clean-card-title {
+        font-family: 'Playfair Display', serif;
+        font-size: 1.2rem;
+        font-weight: 700;
+        color: #2E1A47;
+        margin: 0 0 0.3rem 0;
+    }
+
+    .clean-card-meta {
+        font-family: 'Inter', sans-serif;
+        font-size: 0.85rem;
+        color: #4A5568;
+        margin: 0;
     }
 
     .stButton>button, div.stDownloadButton>button {
@@ -476,18 +517,25 @@ st.markdown(
         color: #FFFFFF !important;
         font-family: 'Inter', sans-serif !important;
         font-weight: 600 !important;
-        border-radius: 8px !important;
+        border-radius: 6px !important;
         border: none !important;
     }
 
     .stButton>button:hover, div.stDownloadButton>button:hover {
         background-color: #B47A19 !important;
-        box-shadow: 0 4px 12px rgba(180, 122, 25, 0.3) !important;
+        box-shadow: 0 3px 10px rgba(180, 122, 25, 0.25) !important;
     }
 
     section[data-testid="stSidebar"] {
         background-color: #F8FAFC !important;
         border-right: 1px solid #E0D7EA !important;
+    }
+
+    .stExpander {
+        border: 1px solid #E2E8F0 !important;
+        border-radius: 8px !important;
+        background-color: #FFFFFF !important;
+        margin-bottom: 0.8rem !important;
     }
 </style>
 """,
@@ -599,7 +647,7 @@ else:
 
     app_mode = st.radio("Portal View:", nav_options, horizontal=True)
 
-    # 1. VOLUNTEER TASK MARKETPLACE (VIEW B - ENHANCED WITH RELEASE & EDIT)
+    # 1. VOLUNTEER TASK MARKETPLACE (CLEAN, ACCESSIBLE, EXPANDABLE)
     if app_mode == "📋 Volunteer Task Marketplace":
         st.header(f"👋 Welcome, {curr_user['full_name']}!")
 
@@ -627,12 +675,12 @@ else:
 
         st.write("---")
         st.subheader("📋 Volunteer Task Marketplace")
-        st.caption("Browse tasks approved for your clearance tier. Claim tasks, manage active commitments, or edit your submissions.")
+        st.caption("Clean summary cards for fast scanning. Click '🔽 View Details & Action Controls' on any task to see instructions, attachments, and claim options!")
 
         conn = sqlite3.connect(DB_FILE)
         categories_df = pd.read_sql_query("SELECT DISTINCT category FROM tasks", conn)
         all_categories = ["All Categories"] + categories_df["category"].dropna().tolist()
-        selected_cat = st.selectbox("🔍 Filter Tasks by Functional Category:", all_categories)
+        selected_cat = st.selectbox("🔍 Filter Tasks by Category:", all_categories)
 
         cat_filter_sql = "" if selected_cat == "All Categories" else f"AND category = '{selected_cat}'"
         
@@ -650,21 +698,31 @@ else:
             st.info("No tasks currently available matching your selected filters.")
         else:
             for idx, row in df_tasks.iterrows():
-                with st.container():
-                    status_badge = "🟢 OPEN TASK" if row['status'] == 'Open' else f"🟡 YOUR TASK ({row['status']})"
-                    st.markdown(
-                        f"""
-                        <div class="task-card">
-                            <span class="mom-badge-pill">{status_badge} | Tier {row['tier_required']} | {row['time_est']} Hours</span>
-                            <h3 style="margin-top: 0.4rem; color: #2E1A47;">[{row['task_code']}] {row['title']}</h3>
-                            <p><strong>📂 Category:</strong> {row['category']} | <strong>📍 Site Node:</strong> {row['site_node']}</p>
+                is_claimed_by_me = (row['assigned_volunteer'] == curr_user['username'])
+                status_icon = "🟢 OPEN TASK" if row['status'] == 'Open' else f"🟡 YOUR TASK ({row['status']})"
+                
+                # CLEAN EASY-TO-READ SUMMARY CARD HEADER
+                st.markdown(
+                    f"""
+                    <div class="clean-summary-card">
+                        <div class="clean-card-title">[{row['task_code']}] {row['title']}</div>
+                        <div class="clean-card-meta">
+                            <span class="mom-badge-pill">{status_icon}</span>
+                            <span class="mom-tag-pill">📂 {row['category']}</span>
+                            <span class="mom-tag-pill">📍 {row['site_node']}</span>
+                            <span class="mom-tag-pill">🔒 Tier {row['tier_required']}</span>
+                            <span class="mom-tag-pill">⏱️ {row['time_est']} Hours Credit</span>
                         </div>
-                        """,
-                        unsafe_allow_html=True,
-                    )
+                    </div>
+                    """,
+                    unsafe_allow_html=True,
+                )
 
+                # ALL HEAVY DETAILS & ACTIONS ARE NEATLY TUCKED INSIDE AN EXPANDER
+                exp_label = "📌 Manage Your Claimed Task & Submissions" if is_claimed_by_me else "🔽 View Details, Instructions & Claim Task"
+                with st.expander(exp_label, expanded=is_claimed_by_me):
                     st.markdown(f"#### 💡 Why This Matters\n{row['why_it_matters']}")
-
+                    
                     if row["file_path"] and os.path.exists(row["file_path"]):
                         with open(row["file_path"], "rb") as f:
                             st.download_button(
@@ -675,13 +733,13 @@ else:
                                 key=f"dl_{row['id']}_{row['task_code']}"
                             )
 
-                    with st.expander("📌 View Instructions & Deliverable Rules"):
-                        st.markdown(f"**Step-by-Step Instructions:**\n{row['instructions']}")
-                        st.markdown(f"**Expected Deliverable:**\n{row['expected_deliverable']}")
+                    st.markdown(f"**Step-by-Step Instructions:**\n{row['instructions']}")
+                    st.markdown(f"**Expected Deliverable:**\n{row['expected_deliverable']}")
+                    st.write("---")
 
-                    # Action Controls
+                    # Action Controls Inside Expander
                     if row['status'] == 'Open':
-                        if st.button(f"🙋 Claim This Task ({row['task_code']})", key=f"claim_{row['id']}"):
+                        if st.button(f"🙋 Claim Task [{row['task_code']}]", key=f"claim_{row['id']}"):
                             conn = sqlite3.connect(DB_FILE)
                             c = conn.cursor()
                             c.execute(
@@ -693,11 +751,10 @@ else:
                             st.success(f"Task {row['task_code']} claimed! You can now complete the work and submit your proof below.")
                             st.rerun()
 
-                    elif row['assigned_volunteer'] == curr_user['username']:
-                        st.info(f"📌 Status: **{row['status']}**")
+                    elif is_claimed_by_me:
+                        st.info(f"📌 Task Status: **{row['status']}**")
                         
-                        # Task Release Button
-                        col_rel1, col_rel2 = st.columns([1, 2])
+                        col_rel1, _ = st.columns([1, 2])
                         with col_rel1:
                             if st.button(f"↩️ Release Task Back to Marketplace", key=f"rel_{row['id']}"):
                                 conn = sqlite3.connect(DB_FILE)
@@ -711,7 +768,6 @@ else:
                                 st.warning(f"Task {row['task_code']} released back to the public marketplace.")
                                 st.rerun()
 
-                        # Edit / Submit Notes Form
                         with st.form(key=f"sub_form_{row['id']}"):
                             sub_notes = st.text_area(
                                 "Edit / Submit Completed Work / Notes / Email List:",
@@ -765,10 +821,10 @@ else:
         else:
             st.dataframe(df_my_history, use_container_width=True)
 
-    # 2. LIVE IMPACT & NEWS DASHBOARD (CALENDAR, UPDATES, STRATEGIC PLANS)
+    # 2. LIVE IMPACT & NEWS DASHBOARD (CLEAN & FLOWY FORMATTING)
     elif app_mode == "📊 Live Impact & News Dashboard":
         st.header("📊 M.O.M. Community Impact & News Dashboard")
-        st.caption("Stay Informed on Organization News, Upcoming Calendar Events, Strategic Milestones & Pulse Checks")
+        st.caption("Stay Informed on Organization News, Upcoming Calendar Events & Strategic Milestones")
 
         # Top Metric Cards
         m1, m2, m3, m4 = st.columns(4)
@@ -779,7 +835,6 @@ else:
 
         st.write("---")
 
-        # Layout Split: Announcements vs Calendar
         col_dash1, col_dash2 = st.columns(2)
 
         with col_dash1:
@@ -792,24 +847,26 @@ else:
                 st.caption("No announcements posted yet.")
             else:
                 for _, a_row in df_ann.iterrows():
-                    st.info(f"📌 **[{a_row['category']}] {a_row['title']}** ({a_row['date_posted']})\n\n{a_row['content']}")
+                    with st.expander(f"📌 [{a_row['category']}] {a_row['title']} ({a_row['date_posted']})", expanded=False):
+                        st.write(a_row['content'])
 
             st.write("---")
-            st.subheader("🚀 Strategic Milestones & Pre-Launch Roadmap")
-            st.markdown("""
-            * **Phase 1: Pre-Launch Foundation (Current)**
-              * 5-Tab Legal Readiness Binder standardization.
-              * Google Ad Grant compliance repair for `mendingourmistakes.org`.
-              * Initial Good360 Requisition & Community Outreach Drive.
-            * **Phase 2: Regional Site Node Activation (Upcoming)**
-              * Node 1 (Malvern Plaza Hub) & Node 2 (Traskwood Campus) staging.
-              * Heritage Trade & Salvage (AHTA) depot inventory cataloging.
-            * **Phase 3: Full Continuum of Care (CoC) Launch**
-              * Court Appointed Lived-Experience Specialists (CALES) deployment.
-            """)
+            st.subheader("🚀 Strategic Milestones & Roadmap")
+            with st.expander("📍 View M.O.M. 3-Phase Expansion Roadmap"):
+                st.markdown("""
+                * **Phase 1: Pre-Launch Foundation (Current)**
+                  * 5-Tab Legal Readiness Binder standardization.
+                  * Google Ad Grant compliance repair for `mendingourmistakes.org`.
+                  * Initial Good360 Requisition & Community Outreach Drive.
+                * **Phase 2: Regional Site Node Activation (Upcoming)**
+                  * Node 1 (Malvern Plaza Hub) & Node 2 (Traskwood Campus) staging.
+                  * Heritage Trade & Salvage (AHTA) depot inventory cataloging.
+                * **Phase 3: Full Continuum of Care (CoC) Launch**
+                  * Court Appointed Lived-Experience Specialists (CALES) deployment.
+                """)
 
         with col_dash2:
-            st.subheader("📅 Upcoming Calendar & Workday Schedule")
+            st.subheader("📅 Upcoming Calendar & Schedule")
             conn = sqlite3.connect(DB_FILE)
             df_cal = pd.read_sql_query("SELECT title, event_date, time_str, location, description FROM calendar_events ORDER BY id ASC LIMIT 5", conn)
             conn.close()
@@ -818,30 +875,29 @@ else:
                 st.caption("No calendar events scheduled yet.")
             else:
                 for _, c_row in df_cal.iterrows():
-                    with st.container():
-                        st.markdown(f"🗓️ **{c_row['event_date']} ({c_row['time_str']})**")
-                        st.markdown(f"**{c_row['title']}**")
-                        st.caption(f"📍 Location: {c_row['location']}\n\n{c_row['description']}")
-                        st.write("---")
+                    with st.expander(f"🗓️ {c_row['event_date']} — {c_row['title']}"):
+                        st.markdown(f"**Time:** {c_row['time_str']}")
+                        st.markdown(f"**Location:** {c_row['location']}")
+                        st.write(c_row['description'])
 
-            # Quick Volunteer Pulse Poll Feature
+            st.write("---")
             st.subheader("🗳️ Volunteer Pulse Check")
-            st.markdown("**Question: What volunteer work session time works best for your schedule?**")
-            with st.form("pulse_poll_form"):
-                poll_opt = st.radio("Select your preferred time slot:", [
-                    "Weekday Evenings (6:00 PM - 8:00 PM)",
-                    "Saturday Mornings (9:00 AM - 12:00 PM)",
-                    "Self-Paced / Flexible Remote Hours",
-                ])
-                if st.form_submit_button("Submit Vote"):
-                    conn = sqlite3.connect(DB_FILE)
-                    c = conn.cursor()
-                    c.execute("INSERT INTO poll_votes (username, option_chosen) VALUES (?, ?)", (curr_user['username'], poll_opt))
-                    conn.commit()
-                    conn.close()
-                    st.success("Thank you for your feedback! Vote recorded.")
+            with st.expander("🗳️ Vote: Preferred Workday Schedule"):
+                with st.form("pulse_poll_form"):
+                    poll_opt = st.radio("Select your preferred time slot:", [
+                        "Weekday Evenings (6:00 PM - 8:00 PM)",
+                        "Saturday Mornings (9:00 AM - 12:00 PM)",
+                        "Self-Paced / Flexible Remote Hours",
+                    ])
+                    if st.form_submit_button("Submit Vote"):
+                        conn = sqlite3.connect(DB_FILE)
+                        c = conn.cursor()
+                        c.execute("INSERT INTO poll_votes (username, option_chosen) VALUES (?, ?)", (curr_user['username'], poll_opt))
+                        conn.commit()
+                        conn.close()
+                        st.success("Thank you for your feedback! Vote recorded.")
 
-    # 3. DIRECT MESSAGING (VOLUNTEERS & COORDINATORS)
+    # 3. DIRECT MESSAGING
     elif app_mode == "💬 Direct Messaging":
         st.header("💬 Internal Direct Messaging")
         st.caption("Send private messages to coordinators or fellow volunteers.")
@@ -859,7 +915,6 @@ else:
                 format_func=lambda u: f"{all_users.loc[all_users['username']==u, 'full_name'].values[0]} (@{u} - {all_users.loc[all_users['username']==u, 'role'].values[0]})"
             )
 
-            # Composition Box
             with st.form("send_msg_form"):
                 msg_body = st.text_area("Write Your Message:")
                 if st.form_submit_button("📨 Send Message"):
@@ -899,9 +954,9 @@ else:
     # 4. COMMUNITY DISCUSSION BOARD
     elif app_mode == "🗣️ Community Discussion Board":
         st.header("🗣️ Community Discussion Board")
-        st.caption("Public Forum for Team Ideas, Q&A, and General Community Discussions")
+        st.caption("Public Forum for Team Ideas, Q&A, and Community Discussions")
 
-        t_disc1, t_disc2 = st.tabs(["💬 Active Topics & Threads", "➕ Start New Discussion Topic"])
+        t_disc1, t_disc2 = st.tabs(["💬 Active Discussion Topics", "➕ Start New Topic"])
 
         with t_disc1:
             conn = sqlite3.connect(DB_FILE)
@@ -912,11 +967,10 @@ else:
                 st.info("No discussion topics posted yet. Be the first to start a topic!")
             else:
                 for _, d_row in discussions_df.iterrows():
-                    with st.expander(f"📌 [{d_row['category']}] {d_row['title']} (by @{d_row['author']} on {d_row['timestamp']})"):
+                    with st.expander(f"💬 [{d_row['category']}] {d_row['title']} (by @{d_row['author']} on {d_row['timestamp']})"):
                         st.markdown(d_row['content'])
                         st.write("---")
                         
-                        # Fetch Replies
                         conn = sqlite3.connect(DB_FILE)
                         replies_df = pd.read_sql_query(
                             "SELECT author, content, timestamp FROM discussion_replies WHERE discussion_id = ? ORDER BY id ASC",
@@ -932,7 +986,6 @@ else:
                             for _, r_row in replies_df.iterrows():
                                 st.markdown(f"💬 **@{r_row['author']}** *({r_row['timestamp']})*:\n{r_row['content']}")
 
-                        # Reply Form
                         with st.form(key=f"reply_form_{d_row['id']}"):
                             reply_text = st.text_input("Post a reply:")
                             if st.form_submit_button("Post Reply"):
@@ -1113,7 +1166,9 @@ else:
                 st.caption("You have no support tickets.")
             else:
                 for _, t_row in my_tickets.iterrows():
-                    st.info(f"📌 **[{t_row['category']}] {t_row['subject']}** — Status: `{t_row['status']}`\n\n**Your Request:** {t_row['message']}\n\n**Coordinator Response:** {t_row['response'] if t_row['response'] else 'Pending response...'}")
+                    with st.expander(f"📌 [{t_row['category']}] {t_row['subject']} — Status: {t_row['status']}"):
+                        st.write(f"**Your Request:** {t_row['message']}")
+                        st.write(f"**Coordinator Response:** {t_row['response'] if t_row['response'] else 'Pending response...'}")
 
         with t_sup2:
             st.subheader("💡 Share Your Ideas with Leadership")
@@ -1166,7 +1221,7 @@ else:
                 conn.close()
                 st.success(f"Account for {new_name} created!")
 
-    # 9. COORDINATOR COMMAND CENTER (VIEW A + MANAGING TICKETS & ANNOUNCEMENTS)
+    # 9. COORDINATOR COMMAND CENTER
     elif app_mode == "🛠️ Coordinator Command Center":
         st.header("🛠️ Coordinator Command Center")
 
@@ -1289,8 +1344,7 @@ else:
                     st.info("No submissions currently pending review.")
                 else:
                     for idx, r_row in df_rev.iterrows():
-                        with st.container():
-                            st.markdown(f"**[{r_row['task_code']}] {r_row['title']}** — Submitted by **@{r_row['assigned_volunteer']}**")
+                        with st.expander(f"📥 [{r_row['task_code']}] {r_row['title']} — Submitted by @{r_row['assigned_volunteer']}"):
                             st.write(f"**Time Credit:** {r_row['time_est']} Hrs | **Category:** {r_row['category']}")
                             st.markdown(f"**Submitted Notes / Contact List:**\n```\n{r_row['submission_notes']}\n```")
 
