@@ -1,4 +1,3 @@
-Complete Upgraded app.py Code
 import hashlib
 import os
 import sqlite3
@@ -19,7 +18,6 @@ def hash_pass(password):
 def clean_pdf_text(text):
     if not text:
         return ""
-    # Replace common unicode dashes and quotes with standard ASCII
     text = (
         text.replace("—", "-")
         .replace("–", "-")
@@ -27,7 +25,6 @@ def clean_pdf_text(text):
         .replace("“", '"')
         .replace("”", '"')
     )
-    # Strip emojis and non-latin1 characters for standard Helvetica PDF fonts
     return text.encode("latin-1", "ignore").decode("latin-1").strip()
 
 
@@ -37,7 +34,7 @@ def generate_pdf_letter(full_name, username, total_hours, tier, badges):
     pdf.set_margins(20, 20, 20)
 
     # Header Banner
-    pdf.set_fill_color(46, 26, 71)  # Primary Dark Purple
+    pdf.set_fill_color(46, 26, 71)
     pdf.rect(0, 0, 210, 35, "F")
 
     pdf.set_font("Helvetica", "B", 18)
@@ -119,7 +116,6 @@ def init_db():
     conn = sqlite3.connect(DB_FILE)
     c = conn.cursor()
 
-    # Users table
     c.execute("""
         CREATE TABLE IF NOT EXISTS users (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -134,7 +130,6 @@ def init_db():
         )
     """)
 
-    # Tasks table
     c.execute("""
         CREATE TABLE IF NOT EXISTS tasks (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -155,7 +150,6 @@ def init_db():
         )
     """)
 
-    # Kudos table
     c.execute("""
         CREATE TABLE IF NOT EXISTS kudos (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -166,7 +160,6 @@ def init_db():
         )
     """)
 
-    # Seed default Admin and Onboarder accounts if missing
     c.execute("SELECT COUNT(*) FROM users")
     if c.fetchone() == 0:
         default_users = [
@@ -209,7 +202,6 @@ def init_db():
             default_users,
         )
 
-    # Seed default sample tasks if empty
     c.execute("SELECT COUNT(*) FROM tasks")
     if c.fetchone() == 0:
         sample_tasks = [
@@ -266,14 +258,12 @@ def init_db():
 
 init_db()
 
-# Page config
 st.set_page_config(
     page_title="Mending Our Mistakes, Inc. — Volunteer Portal",
     page_icon="💜",
     layout="wide",
 )
 
-# Custom Styling
 st.markdown(
     """
 <style>
@@ -362,13 +352,11 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# Session state initialization
 if "logged_in" not in st.session_state:
     st.session_state["logged_in"] = False
 if "user" not in st.session_state:
     st.session_state["user"] = None
 
-# Sidebar Authentication Box
 st.sidebar.markdown(
     """
 <div style="text-align: center; padding-bottom: 1rem;">
@@ -432,7 +420,6 @@ else:
         st.session_state["user"] = None
         st.rerun()
 
-# MAIN BRAND HEADER BANNER
 st.markdown(
     """
 <div class="mom-header">
@@ -456,7 +443,6 @@ if not st.session_state["logged_in"]:
 else:
     curr_user = st.session_state["user"]
 
-    # Navigation Bar
     nav_options = [
         "📋 My Task Workspace",
         "📊 Live Impact Dashboard",
@@ -468,11 +454,9 @@ else:
 
     app_mode = st.radio("Portal View:", nav_options, horizontal=True)
 
-    # 1. MY TASK WORKSPACE
     if app_mode == "📋 My Task Workspace":
         st.header(f"👋 Welcome, {curr_user['full_name']}!")
 
-        # Profile Summary & PDF Certificate Generator
         col_prof1, col_prof2 = st.columns(2)
         with col_prof1:
             c_p1, c_p2, c_p3 = st.columns(3)
@@ -481,7 +465,6 @@ else:
             badge_display = curr_user["badges"] if curr_user["badges"] else "🌱 Active"
             c_p3.metric("Badges Earned", badge_display)
         with col_prof2:
-            # Generate PDF Service Letter
             pdf_bytes = generate_pdf_letter(
                 curr_user["full_name"],
                 curr_user["username"],
@@ -569,7 +552,6 @@ else:
                                 )
                                 st.rerun()
 
-        # Personal History
         st.write("---")
         st.subheader("📜 Your Submitted & Approved Task History")
         conn = sqlite3.connect(DB_FILE)
@@ -584,7 +566,6 @@ else:
         else:
             st.dataframe(df_my_history, use_container_width=True)
 
-    # 2. LIVE IMPACT DASHBOARD
     elif app_mode == "📊 Live Impact Dashboard":
         st.header("📊 M.O.M. Community Impact Dashboard")
         st.caption(
@@ -617,7 +598,6 @@ else:
             "85% Complete — 185 Care Packages Delivered to Chandler Road Campus!"
         )
 
-    # 3. TRAINING & TIER UPGRADE
     elif app_mode == "🎓 Training & Tier Upgrade":
         st.header("🎓 Interactive Micro-Training & Auto-Tier Unlocking")
         st.caption(
@@ -687,7 +667,6 @@ else:
                         " again!"
                     )
 
-    # 4. KUDOS & LEADERBOARD
     elif app_mode == "🌟 Community Kudos & Leaderboard":
         st.header("🌟 Volunteer Kudos & Monthly Leaderboard")
 
@@ -754,7 +733,6 @@ else:
                     f'"{msg_text}" *({time_text})*'
                 )
 
-    # 5. ONBOARDING (COORDINATORS)
     elif app_mode == "👥 Volunteer Onboarding":
         st.header("👥 Volunteer Onboarding & User Management")
         with st.form("create_user_form"):
@@ -786,7 +764,6 @@ else:
                 conn.close()
                 st.success(f"Account for {new_name} created!")
 
-    # 6. COORDINATOR ADMIN HUB
     elif app_mode == "⚙️ Coordinator Admin Hub":
         st.header("⚙️ Coordinator Admin Hub")
         t_rev, t_pub = st.tabs(["📥 Review Submissions", "➕ Publish Task"])
