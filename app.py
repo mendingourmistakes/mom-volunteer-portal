@@ -1,15 +1,19 @@
+import os
 import sqlite3
 import pandas as pd
 import streamlit as st
 
 DB_FILE = "mom_volunteers.db"
+UPLOAD_DIR = "uploaded_resources"
+
+# Ensure upload directory exists
+os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 
 def init_db():
   conn = sqlite3.connect(DB_FILE)
   c = conn.cursor()
 
-  # Create base table
   c.execute("""
         CREATE TABLE IF NOT EXISTS tasks (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -19,7 +23,8 @@ def init_db():
             module TEXT NOT NULL,
             tier_required INTEGER NOT NULL,
             time_est TEXT NOT NULL,
-            drive_link TEXT DEFAULT '',
+            file_path TEXT DEFAULT '',
+            file_name TEXT DEFAULT '',
             why_it_matters TEXT NOT NULL,
             instructions TEXT NOT NULL,
             expected_deliverable TEXT NOT NULL,
@@ -29,83 +34,13 @@ def init_db():
         )
     """)
 
-  # Migration check for existing databases
+  # Migration check for file columns
   c.execute("PRAGMA table_info(tasks)")
   columns = [col[1] for col in c.fetchall()]
-  if "drive_link" not in columns:
-    c.execute("ALTER TABLE tasks ADD COLUMN drive_link TEXT DEFAULT ''")
-
-  # Seed sample tasks if database is empty
-  c.execute("SELECT COUNT(*) FROM tasks")
-  if c.fetchone()[0] == 0:
-    sample_tasks = [
-        (
-            "ANN-101",
-            "Legal Readiness Binder Pre-Check",
-            "Node 1: Dyer St Plaza Hub (Malvern)",
-            "Civil Legal Navigation (ANN)",
-            2,
-            "2 Hours",
-            "https://drive.google.com",  # Replace with your actual Drive folder link
-            "M.O.M. supports pro se parents in private civil court by"
-            " organizing 5-tab Legal Readiness Binders to prevent bench"
-            " warrants and custody loss.",
-            "1. Click the Shared Drive link above to open the Binder"
-            " Folder.\n2. Review uploaded client documents against the 5-Tab"
-            " Checklist.\n3. Format into a clean PDF binder index for CALES"
-            " review.",
-            "Completed 5-Tab Digital PDF Binder Index ready for Legal Aid"
-            " review.",
-            "Open",
-            None,
-            None,
-        ),
-        (
-            "AHTA-201",
-            "Salvage Depot Materials Cataloging",
-            "Node 3: Industrial Rd Trade Yard (Malvern)",
-            "Heritage Trade & Salvage (AHTA)",
-            1,
-            "1.5 Hours",
-            "https://drive.google.com",  # Replace with your actual Drive folder link
-            "Reclaimed architectural materials generate earned revenue for"
-            " M.O.M. while teaching trade apprentices preservation skills.",
-            "1. Open the Shared Drive Salvage Inventory Folder.\n2. Review"
-            " photos of incoming reclaimed timber and brick.\n3. Log"
-            " dimensions, architectural era, and quantities into the Google"
-            " Sheet.",
-            "10 cataloged inventory entries logged in the Shared Drive database.",
-            "Open",
-            None,
-            None,
-        ),
-        (
-            "PRISM-301",
-            "Safe Exchange & Visitation Suite Prep",
-            "Node 2: Chandler Rd Campus (Traskwood)",
-            "Safe Family Contact (PRISM)",
-            3,
-            "3 Hours",
-            "https://drive.google.com",  # Replace with your actual Drive folder link
-            "PRISM suites provide neutral, trauma-informed visitation for"
-            " parents restoring court-sanctioned custody rights.",
-            "1. Open the PRISM Operations Guide on the Shared Drive.\n2."
-            " Inspect suite safety equipment and dual-entrance access"
-            " points.\n3. Complete the digital pre-session verification form.",
-            "Signed PRISM Suite Verification Log submitted to Clinical"
-            " Director.",
-            "Open",
-            None,
-            None,
-        ),
-    ]
-    c.executemany(
-        """
-            INSERT INTO tasks (task_code, title, site_node, module, tier_required, time_est, drive_link, why_it_matters, instructions, expected_deliverable, status, assigned_volunteer, submission_notes)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """,
-        sample_tasks,
-    )
+  if "file_path" not in columns:
+    c.execute("ALTER TABLE tasks ADD COLUMN file_path TEXT DEFAULT ''")
+  if "file_name" not in columns:
+    c.execute("ALTER TABLE tasks ADD COLUMN file_name TEXT DEFAULT ''")
 
   conn.commit()
   conn.close()
@@ -118,14 +53,9 @@ st.set_page_config(
 )
 
 st.title("🏛️ Mending Our Mistakes, Inc. — Operations & Volunteer Portal")
-st.caption(
-    "Tiered Delegation, Shared Drive Integration & Task Management System"
-)
+st.caption("Tiered Task Delegation & Resource File Distribution System")
 
 # Sidebar Navigation
-st.sidebar.image(
-    "https://img.icons8.com/color/96/handshake.png", use_container_width=False
-)
 sidebar_mode = st.sidebar.radio(
     "Select Portal View:", ["Volunteer Task Center", "Coordinator Admin Hub"]
 )
@@ -133,7 +63,7 @@ sidebar_mode = st.sidebar.radio(
 if sidebar_mode == "Volunteer Task Center":
   st.header("📋 Available Volunteer Tasks")
 
-  col_v1, col_v2 = st.columns([1, 1])
+  col_v1, col_v2 = st.columns(2)
   with col_v1:
     volunteer_name = st.text_input(
         "Your Name / Email:", placeholder="e.g. Jane Doe (jane@example.com)"
@@ -182,15 +112,19 @@ if sidebar_mode == "Volunteer Task Center":
 
         st.markdown(f"#### 💡 Why This Matters\n{row['why_it_matters']}")
 
-        # Drive Link Button
-        if row["drive_link"] and len(row["drive_link"].strip()) > 5:
-          st.link_button(
-              "📂 Open Shared Drive Documents & Templates",
-              row["drive_link"].strip(),
+        # File Download Section
+        if row["file_path"] and os.path.exists(row["file_path"]):
+          with open(row["file_path"], "rb") as f:
+            file_bytes = f.read()
+          st.download_button(
+              label=f"📥 Download Task Resource File ({row['file_name']})",
+              data=file_bytes,
+              file_name=row["file_name"],
+              mime="application/octet-stream",
               type="primary",
           )
         else:
-          st.caption("ℹ️ No external Drive link required for this task.")
+          st.caption("ℹ️ No attached document file for this task.")
 
         with st.expander("📌 View Detailed Instructions & Deliverable Rules"):
           st.markdown(
@@ -203,10 +137,10 @@ if sidebar_mode == "Volunteer Task Center":
         # Submission Form
         with st.form(key=f"claim_form_{row['task_code']}"):
           sub_notes = st.text_area(
-              "Submit Completed Work / Paste Google Drive Output Link:",
+              "Submit Completed Work / Completion Notes:",
               placeholder=(
-                  "Paste link to your finished document or enter completion"
-                  " notes here..."
+                  "Enter completion details, notes, or paste links to your"
+                  " finished work..."
               ),
           )
           submit_button = st.form_submit_button("Submit Work for Review")
@@ -215,10 +149,7 @@ if sidebar_mode == "Volunteer Task Center":
             if not volunteer_name:
               st.error("Please enter your Name or Email at the top first!")
             elif not sub_notes:
-              st.error(
-                  "Please include your completion notes or output link before"
-                  " submitting!"
-              )
+              st.error("Please enter completion notes before submitting!")
             else:
               conn = sqlite3.connect(DB_FILE)
               c = conn.cursor()
@@ -242,9 +173,9 @@ elif sidebar_mode == "Coordinator Admin Hub":
       ["➕ Add New Task", "📥 Review Submissions", "📊 Master Task Ledger"]
   )
 
-  # Tab 1: Create New Task
+  # Tab 1: Create New Task with File Upload
   with tab1:
-    st.subheader("Create a Self-Contained Task Card with Shared Drive Links")
+    st.subheader("Create a Task Card & Upload Reference Documents")
     with st.form("create_task_form"):
       c_col1, c_col2 = st.columns(2)
       with c_col1:
@@ -284,9 +215,11 @@ elif sidebar_mode == "Coordinator Admin Hub":
             help="1=Public, 2=Logistics, 3=Confidential",
         )
         t_time = st.text_input("Estimated Time Commitment:", "2 Hours")
-        t_drive = st.text_input(
-            "Google Drive / Shared Document Link:",
-            placeholder="https://drive.google.com/drive/folders/...",
+
+        # File Upload Field
+        uploaded_file = st.file_uploader(
+            "Upload Reference Document (PDF, Word, Excel, Image):",
+            type=["pdf", "docx", "xlsx", "csv", "png", "jpg", "zip", "txt"],
         )
 
       t_why = st.text_area("Why This Matters (Background Context):")
@@ -297,13 +230,22 @@ elif sidebar_mode == "Coordinator Admin Hub":
         if not t_code or not t_title:
           st.error("Task ID Code and Title are required!")
         else:
+          saved_file_path = ""
+          saved_file_name = ""
+
+          if uploaded_file is not None:
+            saved_file_name = uploaded_file.name
+            saved_file_path = os.path.join(UPLOAD_DIR, f"{t_code}_{saved_file_name}")
+            with open(saved_file_path, "wb") as f:
+              f.write(uploaded_file.getbuffer())
+
           conn = sqlite3.connect(DB_FILE)
           c = conn.cursor()
           try:
             c.execute(
                 """
-                            INSERT INTO tasks (task_code, title, site_node, module, tier_required, time_est, drive_link, why_it_matters, instructions, expected_deliverable)
-                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                            INSERT INTO tasks (task_code, title, site_node, module, tier_required, time_est, file_path, file_name, why_it_matters, instructions, expected_deliverable)
+                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                         """,
                 (
                     t_code,
@@ -312,14 +254,15 @@ elif sidebar_mode == "Coordinator Admin Hub":
                     t_module,
                     t_tier,
                     t_time,
-                    t_drive,
+                    saved_file_path,
+                    saved_file_name,
                     t_why,
                     t_inst,
                     t_deliv,
                 ),
             )
             conn.commit()
-            st.success(f"Task {t_code} published to portal successfully!")
+            st.success(f"Task {t_code} published with document attachment!")
           except Exception as e:
             st.error(f"Error creating task: {e}")
           finally:
@@ -347,7 +290,7 @@ elif sidebar_mode == "Coordinator Admin Hub":
               f"**Site:** {row['site_node']} | **Module:** {row['module']}"
           )
           st.markdown(
-              f"**Submitted Deliverable / Link:**\n```\n{row['submission_notes']}\n```"
+              f"**Submitted Deliverable / Notes:**\n```\n{row['submission_notes']}\n```"
           )
 
           r_col1, r_col2 = st.columns(2)
