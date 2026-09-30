@@ -1,3 +1,4 @@
+Complete Upgraded app.py Code
 import hashlib
 import os
 import sqlite3
@@ -13,6 +14,21 @@ os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 def hash_pass(password):
     return hashlib.sha256(password.encode()).hexdigest()
+
+
+def clean_pdf_text(text):
+    if not text:
+        return ""
+    # Replace common unicode dashes and quotes with standard ASCII
+    text = (
+        text.replace("—", "-")
+        .replace("–", "-")
+        .replace("’", "'")
+        .replace("“", '"')
+        .replace("”", '"')
+    )
+    # Strip emojis and non-latin1 characters for standard Helvetica PDF fonts
+    return text.encode("latin-1", "ignore").decode("latin-1").strip()
 
 
 def generate_pdf_letter(full_name, username, total_hours, tier, badges):
@@ -50,27 +66,30 @@ def generate_pdf_letter(full_name, username, total_hours, tier, badges):
     pdf.set_text_color(45, 55, 72)
 
     date_str = pd.Timestamp.now().strftime("%B %d, %Y")
-    pdf.cell(0, 8, f"Date: {date_str}", ln=True)
+    pdf.cell(0, 8, clean_pdf_text(f"Date: {date_str}"), ln=True)
     record_id = hashlib.md5(username.encode()).hexdigest()[:8].upper()
     pdf.cell(
         0,
         8,
-        f"Volunteer Record ID: MOM-VOL-{record_id}",
+        clean_pdf_text(f"Volunteer Record ID: MOM-VOL-{record_id}"),
         ln=True,
     )
     pdf.ln(5)
 
-    badge_str = badges if badges else "🌱 Active Contributor"
+    clean_name = clean_pdf_text(full_name)
+    clean_user = clean_pdf_text(username)
+    clean_badge = clean_pdf_text(badges) if badges else "Active Contributor"
+
     text_body = (
-        f"This letter serves as official verification that {full_name}"
-        f" ({username}) has actively contributed valuable volunteer service"
+        f"This letter serves as official verification that {clean_name}"
+        f" ({clean_user}) has actively contributed valuable volunteer service"
         " hours to Mending Our Mistakes, Inc. (M.O.M.) across our integrated"
         " Continuum of Care (CoC) and regional site network in Central"
         " Arkansas.\n\nVerified Service Credentials:\n -"
         f" Total Authenticated Service Hours: {total_hours:.1f} Hours\n -"
         f" Approved Security & Clearance Level: Tier {tier}\n -"
-        f" Earned Badges & Distinctions: {badge_str}\n\nThrough these"
-        f" dedicated service efforts, {full_name} has directly supported our"
+        f" Earned Badges & Distinctions: {clean_badge}\n\nThrough these"
+        f" dedicated service efforts, {clean_name} has directly supported our"
         " core mission of reunifying court-involved parents, delivering civil"
         " legal navigation, managing heritage trade salvage, and expanding"
         " family stabilization services.\n\nThis service record is officially"
@@ -79,7 +98,7 @@ def generate_pdf_letter(full_name, username, total_hours, tier, badges):
         " portfolios, and community honors."
     )
 
-    pdf.multi_cell(0, 7, text_body)
+    pdf.multi_cell(0, 7, clean_pdf_text(text_body))
     pdf.ln(15)
 
     # Signature Block
