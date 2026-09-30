@@ -56,13 +56,13 @@ def init_db():
 
   # Seed default Admin and Onboarder accounts if missing
   c.execute("SELECT COUNT(*) FROM users")
-  if c.fetchone()[0] == 0:
+  if c.fetchone() == 0:
     default_users = [
         (
             "admin",
             hash_pass("mom2026"),
             "Volunteer Coordinator",
-            "coordinator@mom.org",
+            "admin@mendingourmistakes.org",
             "Coordinator",
             3,
             0.0,
@@ -72,7 +72,7 @@ def init_db():
             "onboarder",
             hash_pass("mom2026"),
             "Onboarding Specialist",
-            "onboarder@mom.org",
+            "onboarder@mendingourmistakes.org",
             "Coordinator",
             3,
             0.0,
@@ -99,7 +99,7 @@ def init_db():
 
   # Seed default sample tasks if empty
   c.execute("SELECT COUNT(*) FROM tasks")
-  if c.fetchone()[0] == 0:
+  if c.fetchone() == 0:
     sample_tasks = [
         (
             "ANN-101",
@@ -111,9 +111,10 @@ def init_db():
             "",
             "",
             "M.O.M. supports pro se parents by organizing Legal Readiness Binders"
-            " to prevent bench warrants.",
+            " to prevent bench warrants and preserve custody.",
             "1. Review uploaded binder checklist.\n2. Verify tabs 1-5"
-            " completeness.\n3. Format clean index.",
+            " completeness (Court Orders, Income Proof, Visitation Logs, Drug"
+            " Tests, Certificates).\n3. Format clean index.",
             "Completed 5-Tab Digital Index PDF ready for CALES review.",
             "Open",
             None,
@@ -128,11 +129,12 @@ def init_db():
             1.5,
             "",
             "",
-            "Reclaimed brick and timber sales generate revenue while training"
-            " apprentices.",
-            "1. Inspect incoming material photos.\n2. Log quantities and"
-            " architectural era into catalog.",
-            "10 cataloged inventory entries submitted.",
+            "Reclaimed brick and timber sales generate tax-free enterprise"
+            " revenue while training trade apprentices in historic"
+            " preservation.",
+            "1. Inspect incoming material photos.\n2. Log quantities,"
+            " dimensions, and architectural era into catalog.",
+            "10 cataloged inventory entries submitted to AHTA Salvage Depot.",
             "Open",
             None,
             None,
@@ -152,8 +154,147 @@ def init_db():
 
 init_db()
 
+# Page config
 st.set_page_config(
-    page_title="M.O.M. Volunteer Portal", page_icon="🏛️", layout="wide"
+    page_title="Mending Our Mistakes, Inc. — Volunteer Portal",
+    page_icon="💜",
+    layout="wide",
+)
+
+# Custom Styling to match mendingourmistakes.org branding & typography
+st.markdown(
+    """
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Merriweather:ital,wght@0,300;0,400;0,700;1,300&family=Playfair+Display:ital,wght@0,600;0,700;1,400&family=Inter:wght@400;500;600;700&display=swap');
+
+    /* Global Colors & Fonts */
+    :root {
+        --primary-purple: #2E1A47;
+        --royal-purple: #301934;
+        --light-purple: #F3EBF9;
+        --accent-purple: #7E57C2;
+        --gold-amber: #B47A19;
+        --charcoal: #2D3748;
+        --soft-bg: #F8FAFC;
+    }
+
+    body, .stApp {
+        background-color: #FFFFFF;
+        font-family: 'Merriweather', serif;
+        color: #2D3748;
+    }
+
+    /* Top Brand Header Banner */
+    .mom-header {
+        background: linear-gradient(135deg, #2E1A47 0%, #153D62 100%);
+        padding: 2.2rem 2rem;
+        border-radius: 12px;
+        color: #FFFFFF;
+        margin-bottom: 2rem;
+        box-shadow: 0 8px 24px rgba(46, 26, 71, 0.18);
+        border-bottom: 4px solid #B47A19;
+    }
+
+    .mom-header h1 {
+        font-family: 'Playfair Display', serif;
+        font-size: 2.4rem;
+        font-weight: 700;
+        color: #FFFFFF !important;
+        margin: 0 0 0.4rem 0;
+        letter-spacing: 0.02em;
+    }
+
+    .mom-header p {
+        font-family: 'Merriweather', serif;
+        font-size: 1.05rem;
+        color: #E0D7EA;
+        margin: 0;
+        font-weight: 300;
+    }
+
+    .mom-badge-pill {
+        background-color: #F3EBF9;
+        color: #5B2C6F;
+        font-family: 'Inter', sans-serif;
+        font-size: 0.75rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        padding: 4px 14px;
+        border-radius: 50px;
+        display: inline-block;
+        margin-bottom: 0.8rem;
+    }
+
+    /* Headings */
+    h1, h2, h3, .stHeader {
+        font-family: 'Playfair Display', serif !important;
+        color: #2E1A47 !important;
+    }
+
+    /* Card Containers */
+    .task-card {
+        background-color: #FFFFFF;
+        border: 1px solid #E0D7EA;
+        border-left: 6px solid #2E1A47;
+        border-radius: 10px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        box-shadow: 0 4px 12px rgba(46, 26, 71, 0.05);
+        transition: all 0.2s ease-in-out;
+    }
+
+    .task-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(46, 26, 71, 0.12);
+        border-left-color: #B47A19;
+    }
+
+    /* Primary Buttons */
+    .stButton>button, div.stDownloadButton>button {
+        background-color: #2E1A47 !important;
+        color: #FFFFFF !important;
+        font-family: 'Inter', sans-serif !important;
+        font-weight: 600 !important;
+        border-radius: 8px !important;
+        border: none !important;
+        padding: 0.5rem 1.25rem !important;
+        transition: all 0.2s ease !important;
+    }
+
+    .stButton>button:hover, div.stDownloadButton>button:hover {
+        background-color: #B47A19 !important;
+        color: #FFFFFF !important;
+        box-shadow: 0 4px 12px rgba(180, 122, 25, 0.3) !important;
+    }
+
+    /* Sidebar Styling */
+    section[data-testid="stSidebar"] {
+        background-color: #F8FAFC !important;
+        border-right: 1px solid #E0D7EA !important;
+    }
+
+    /* Tabs Styling */
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 8px;
+    }
+
+    .stTabs [data-baseweb="tab"] {
+        font-family: 'Inter', sans-serif;
+        font-weight: 600;
+        color: #2E1A47;
+        border-radius: 6px;
+        padding: 8px 16px;
+        background-color: #F3EBF9;
+    }
+
+    .stTabs [aria-selected="true"] {
+        background-color: #2E1A47 !important;
+        color: #FFFFFF !important;
+    }
+</style>
+""",
+    unsafe_allow_html=True,
 )
 
 # Session state initialization
@@ -163,10 +304,18 @@ if "user" not in st.session_state:
   st.session_state["user"] = None
 
 # Sidebar Authentication Box
-st.sidebar.title("🏛️ M.O.M. Portal")
+st.sidebar.markdown(
+    """
+<div style="text-align: center; padding-bottom: 1rem;">
+    <h2 style="font-family: 'Playfair Display', serif; color: #2E1A47; margin: 0;">Mending Our Mistakes</h2>
+    <p style="font-size: 0.8rem; color: #5B2C6F; font-style: italic;">A Parental Restoration Continuum</p>
+</div>
+""",
+    unsafe_allow_html=True,
+)
 
 if not st.session_state["logged_in"]:
-  st.sidebar.subheader("🔒 Account Login")
+  st.sidebar.subheader("🔒 Account Sign In")
   login_user = st.sidebar.text_input("Username:")
   login_pass = st.sidebar.text_input("Password:", type="password")
 
@@ -184,7 +333,7 @@ if not st.session_state["logged_in"]:
     if user_row:
       st.session_state["logged_in"] = True
       st.session_state["user"] = {
-          "id": user_row[0],
+          "id": user_row,
           "username": user_row[1],
           "full_name": user_row[2],
           "email": user_row[3],
@@ -218,24 +367,28 @@ else:
     st.session_state["user"] = None
     st.rerun()
 
-# MAIN CONTENT AREA
-st.title("🏛️ Mending Our Mistakes, Inc. — Operations & Volunteer Portal")
-st.caption(
-    "Tiered Account Access, Task Delegation, Resource Hub & Service Hours"
-    " Tracker"
+# MAIN BRAND HEADER BANNER
+st.markdown(
+    """
+<div class="mom-header">
+    <span class="mom-badge-pill">Official Operations & Volunteer Portal</span>
+    <h1>Mending Our Mistakes, Inc.</h1>
+    <p>Restoring Families. Rebuilding Stability. Renewing Communities.</p>
+</div>
+""",
+    unsafe_allow_html=True,
 )
 
 if not st.session_state["logged_in"]:
   st.warning(
-      "👈 Please sign in using the sidebar to access your volunteer portal."
+      "👈 Please sign in using the sidebar to access your volunteer workspace."
   )
-  st.image("https://img.icons8.com/color/96/handshake.png", width=120)
   st.markdown("""
     ### Welcome to the M.O.M. Volunteer Network!
     Our portal provides secure, tiered access to task cards, resource documents, and personalized hour tracking across our 7 regional site nodes.
     
-    * **Tier 1 (Community & Remote)**: Research, cataloging, copyediting, and public tasks.
-    * **Tier 2 (Specialized Operations)**: Logistics, care warehouse inventory, fleet scheduling, and document formatting.
+    * **Tier 1 (Community & Remote)**: Public research, material cataloging, copyediting, and web copy.
+    * **Tier 2 (Specialized Operations)**: Logistics, care warehouse inventory, fleet scheduling, and legal binder formatting.
     * **Tier 3 (Confidential / Client-Facing)**: Supervised visitation support, court compliance records, and pro se mentoring.
     """)
 
@@ -245,7 +398,7 @@ else:
   # Navigation Tabs depending on Role
   if curr_user["role"] in ["Coordinator", "Admin"]:
     app_mode = st.radio(
-        "Navigation View:",
+        "Portal Navigation:",
         [
             "📋 My Volunteer Workspace",
             "👥 Volunteer Onboarding & User Accounts",
@@ -285,15 +438,16 @@ else:
       st.info("No open tasks currently available at your approved tier level.")
     else:
       for idx, row in df_tasks.iterrows():
-        with st.container(border=True):
-          st.subheader(f"🟢 [{row['task_code']}] {row['title']}")
-
-          col_m1, col_m2, col_m3 = st.columns(3)
-          col_m1.markdown(f"**📍 Site Node:**\n{row['site_node']}")
-          col_m2.markdown(f"**⚙️ Module:**\n{row['module']}")
-          col_m3.markdown(
-              f"**🔒 Tier & Time:**\nTier {row['tier_required']} |"
-              f" {row['time_est']} Hours"
+        with st.container():
+          st.markdown(
+              f"""
+                    <div class="task-card">
+                        <span class="mom-badge-pill">Tier {row['tier_required']} | {row['time_est']} Hours</span>
+                        <h3 style="margin-top: 0.4rem; color: #2E1A47;">🟢 [{row['task_code']}] {row['title']}</h3>
+                        <p><strong>📍 Site Node:</strong> {row['site_node']} | <strong>⚙️ Module:</strong> {row['module']}</p>
+                    </div>
+                    """,
+              unsafe_allow_html=True,
           )
 
           st.markdown(f"#### 💡 Why This Matters\n{row['why_it_matters']}")
@@ -458,7 +612,7 @@ else:
         st.info("No submissions currently pending review.")
       else:
         for idx, row in df_rev.iterrows():
-          with st.container(border=True):
+          with st.container():
             st.markdown(
                 f"### 📥 [{row['task_code']}] {row['title']} — Submitted by"
                 f" **{row['assigned_volunteer']}**"
@@ -483,22 +637,19 @@ else:
                   " task_code=?",
                   (row["task_code"],),
               )
-
-              # Credit hours to volunteer
               c.execute(
                   "UPDATE users SET logged_hours = logged_hours + ? WHERE"
                   " username=?",
                   (row["time_est"], row["assigned_volunteer"]),
               )
 
-              # Check hour thresholds for badges
               c.execute(
                   "SELECT logged_hours, badges FROM users WHERE username=?",
                   (row["assigned_volunteer"],),
               )
               u_data = c.fetchone()
               if u_data:
-                total_h, curr_b = u_data[0], u_data[1]
+                total_h, curr_b = u_data, u_data[1]
                 new_b = curr_b
                 if total_h >= 10 and "🏅 10+ Hour Bronze" not in curr_b:
                   new_b += " | 🏅 10+ Hour Bronze"
@@ -539,9 +690,7 @@ else:
       with st.form("pub_task_form"):
         col_pt1, col_pt2 = st.columns(2)
         with col_pt1:
-          pt_code = st.text_input(
-              "Task ID Code:", placeholder="e.g. ANN-102"
-          )
+          pt_code = st.text_input("Task ID Code:", placeholder="e.g. ANN-102")
           pt_title = st.text_input("Task Title:")
           pt_site = st.selectbox(
               "Site Node Location:",
