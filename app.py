@@ -111,9 +111,9 @@ def generate_pdf_letter(full_name, username, total_hours, tier, badges):
 
     return pdf.output()
 
-
+@st.cache_resource
 def init_db():
-    conn = sqlite3.connect(DB_FILE)
+    conn = sqlite3.connect(DB_FILE, check_same_thread=False)
     c = conn.cursor()
 
     c.execute("""
