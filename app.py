@@ -4,6 +4,7 @@ import pandas as pd
 import sqlalchemy
 import streamlit as st
 from fpdf import FPDF
+from supabase import create_client, Client
 
 UPLOAD_DIR = "uploaded_resources"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
@@ -22,6 +23,15 @@ def clean_pdf_text(text):
         .replace("”", '"')
     )
     return text.encode("latin-1", "ignore").decode("latin-1").strip()
+
+@st.cache_resource
+def get_supabase_client() -> Client:
+    # Uses URL and Anon Key from Streamlit Secrets or Environment Variables
+    url = st.secrets["postgres"]["url"].split("@")[1].split("/")[0] if "postgres" in st.secrets else ""
+    # Fallback to direct supabase URL / key if stored in secrets
+    supabase_url = st.secrets.get("SUPABASE_URL", f"https://{url}")
+    supabase_key = st.secrets.get("SUPABASE_KEY", st.secrets.get("postgres", {}).get("password", ""))
+    return create_client(supabase_url, supabase_key)
 
 def generate_pdf_letter(full_name, username, total_hours, tier, badges):
     pdf = FPDF()
@@ -298,7 +308,9 @@ else:
                 )
                 with st.expander(exp_label, expanded=is_claimed_by_me):
                     st.markdown(f"#### 💡 Why This Matters\n{row['why_it_matters']}")
-                    if row["file_path"] and os.path.exists(row["file_path"]):
+                    if row["file_path"] and str(row["file_path"]).startswith("http"):
+                        st.markdown(f"[📥 Download Reference Resource File ({row['file_name']})]({row['file_path']})")
+                    elif row["file_path"] and os.path.exists(row["file_path"]):
                         with open(row["file_path"], "rb") as f:
                             st.download_button(
                                 label=f"📥 Download Reference Resource File ({row['file_name']})",
@@ -328,7 +340,7 @@ else:
                         col_rel1, _ = st.columns([1, 2])
                         with col_rel1:
                             if st.button(
-                                f"↩️ Release Task Back to Marketplace",
+                                f"↩️️ Release Task Back to Marketplace",
                                 key=f"rel_{row['id']}",
                             ):
                                 execute_db(
@@ -364,12 +376,26 @@ else:
                                     p_name = row["proof_file_name"]
                                     if proof_file is not None:
                                         p_name = proof_file.name
-                                        p_path = os.path.join(
-                                            UPLOAD_DIR,
-                                            f"proof_{curr_user['username']}_{p_name}",
-                                        )
-                                        with open(p_path, "wb") as pf:
-                                            pf.write(proof_file.getbuffer())
+                                        try:
+                                            # Direct Cloud Upload to Supabase Storage Bucket
+                                            file_bytes = proof_file.getvalue()
+                                            storage_path = f"proofs/{curr_user['username']}_{p_name}"
+                                            client = get_supabase_client()
+                                            client.storage.from_("proof_files").upload(
+                                                path=storage_path,
+                                                file=file_bytes,
+                                                file_options={"content-type": proof_file.type, "upsert": "true"}
+                                            )
+                                            p_path = client.storage.from_("proof_files").get_public_url(storage_path)
+                                        except Exception as e:
+                                            # Local fallback if bucket is offline
+                                            p_path = os.path.join(
+                                                UPLOAD_DIR,
+                                                f"proof_{curr_user['username']}_{p_name}",
+                                            )
+                                            with open(p_path, "wb") as pf:
+                                                pf.write(proof_file.getbuffer())
+
                                     execute_db(
                                         """
                                         UPDATE tasks 
@@ -773,7 +799,9 @@ else:
                         f"📌 Task [{p_row['task_code']}] {p_row['title']} — Submitted by @{p_row['assigned_volunteer']}"
                     ):
                         st.markdown(f"**Submitted Notes / Output:**\n{p_row['submission_notes']}")
-                        if p_row["proof_file_path"] and os.path.exists(p_row["proof_file_path"]):
+                        if p_row["proof_file_path"] and str(p_row["proof_file_path"]).startswith("http"):
+                            st.markdown(f"[📥 View / Download Proof Attachment ({p_row['proof_file_name']})]({p_row['proof_file_path']})")
+                        elif p_row["proof_file_path"] and os.path.exists(p_row["proof_file_path"]):
                             with open(p_row["proof_file_path"], "rb") as pf:
                                 st.download_button(
                                     label=f"📥 Download Proof Attachment ({p_row['proof_file_name']})",
