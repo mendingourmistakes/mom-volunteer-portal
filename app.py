@@ -27,11 +27,19 @@ def clean_pdf_text(text):
 @st.cache_resource
 def get_supabase_client() -> Client:
     # Uses URL and Anon Key from Streamlit Secrets or Environment Variables
-    url = st.secrets["postgres"]["url"].split("@")[1].split("/")[0] if "postgres" in st.secrets else ""
-    # Fallback to direct supabase URL / key if stored in secrets
-    supabase_url = st.secrets.get("SUPABASE_URL", f"https://{url}")
-    supabase_key = st.secrets.get("SUPABASE_KEY", st.secrets.get("postgres", {}).get("password", ""))
-    return create_client(supabase_url, supabase_key)
+    try:
+        postgres_secrets = st.secrets.get("postgres", {}) if hasattr(st, "secrets") else {}
+        url = ""
+        if "url" in postgres_secrets and "@" in postgres_secrets["url"]:
+            url = postgres_secrets["url"].split("@")[1].split("/")[0]
+        # Fallback to direct supabase URL / key if stored in secrets
+        supabase_url = st.secrets.get("SUPABASE_URL", f"https://{url}" if url else "")
+        supabase_key = st.secrets.get("SUPABASE_KEY", postgres_secrets.get("password", ""))
+        if not supabase_url or not supabase_key:
+            return None
+        return create_client(supabase_url, supabase_key)
+    except Exception:
+        return None
 
 def generate_pdf_letter(full_name, username, total_hours, tier, badges):
     pdf = FPDF()
@@ -91,18 +99,37 @@ def generate_pdf_letter(full_name, username, total_hours, tier, badges):
 
 @st.cache_resource
 def get_db_engine():
-    db_url = st.secrets["postgres"]["url"]
-    return sqlalchemy.create_engine(db_url)
+    try:
+        postgres_secrets = st.secrets.get("postgres", {}) if hasattr(st, "secrets") else {}
+        db_url = postgres_secrets.get("url", os.environ.get("DATABASE_URL", ""))
+        if not db_url:
+            return None
+        return sqlalchemy.create_engine(db_url)
+    except Exception:
+        return None
 
 def run_query(query, params=None):
-    engine = get_db_engine()
-    with engine.connect() as conn:
-        return pd.read_sql_query(sqlalchemy.text(query), conn, params=params)
+    try:
+        engine = get_db_engine()
+        if engine is None:
+            st.error("Database connection configuration is missing or invalid.")
+            return pd.DataFrame()
+        with engine.connect() as conn:
+            return pd.read_sql_query(sqlalchemy.text(query), conn, params=params)
+    except (sqlalchemy.exc.OperationalError, sqlalchemy.exc.DBAPIError, Exception) as e:
+        st.error(f"Database connection error: {e}")
+        return pd.DataFrame()
 
 def execute_db(query, params=None):
-    engine = get_db_engine()
-    with engine.begin() as conn:
-        conn.execute(sqlalchemy.text(query), params or {})
+    try:
+        engine = get_db_engine()
+        if engine is None:
+            st.error("Database connection configuration is missing or invalid.")
+            return
+        with engine.begin() as conn:
+            conn.execute(sqlalchemy.text(query), params or {})
+    except (sqlalchemy.exc.OperationalError, sqlalchemy.exc.DBAPIError, Exception) as e:
+        st.error(f"Database connection error: {e}")
 
 st.set_page_config(
     page_title="Mending Our Mistakes, Inc. — Volunteer Portal",
