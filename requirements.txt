@@ -1,6 +1,6 @@
 streamlit
 pandas
-fpdf2
-psycopg2-binary
+fpdf
 sqlalchemy
 supabase
+psycopg2-binary
