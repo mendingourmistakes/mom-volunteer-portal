@@ -3,4 +3,4 @@ pandas
 fpdf
 sqlalchemy
 supabase
-psycopg2-binary
+psycopg[binary]
