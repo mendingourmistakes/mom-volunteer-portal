@@ -33,7 +33,10 @@ def get_supabase_client() -> Client:
     supabase_key = st.secrets.get("SUPABASE_KEY", st.secrets.get("postgres", {}).get("password", ""))
     return create_client(supabase_url, supabase_key)
 
+@st.cache_data
 def generate_pdf_letter(full_name, username, total_hours, tier, badges):
+    # Performance Optimization: Cache generated PDF bytes using Streamlit cache_data to prevent
+    # re-executing expensive FPDF layout and string formatting on every Streamlit script rerun.
     pdf = FPDF()
     pdf.add_page()
     pdf.set_margins(20, 20, 20)
@@ -87,7 +90,7 @@ def generate_pdf_letter(full_name, username, total_hours, tier, badges):
     pdf.set_font("Helvetica", "", 10)
     pdf.cell(0, 6, "Mending Our Mistakes, Inc. (d.b.a. The M.O.M. Project)", ln=True)
     pdf.cell(0, 6, "mendingourmistakes.org | Malvern & Traskwood, AR", ln=True)
-    return pdf.output()
+    return pdf.output(dest="S").encode("latin-1")
 
 @st.cache_resource
 def get_db_engine():
@@ -243,7 +246,7 @@ else:
             )
             st.download_button(
                 label="📄 Download Official Service Letter (PDF)",
-                data=bytes(pdf_bytes),
+                data=pdf_bytes,
                 file_name=f"MOM_Service_Verification_{curr_user['username']}.pdf",
                 mime="application/pdf",
             )
@@ -561,6 +564,11 @@ else:
             if discussions_df.empty:
                 st.caption("No discussions started yet. Be the first to start a topic!")
             else:
+                # Performance Optimization: Batch fetch all discussion replies in a single query
+                # to eliminate the N+1 database roundtrips per discussion render.
+                all_replies_df = run_query(
+                    "SELECT discussion_id, author, content, timestamp FROM discussion_replies ORDER BY id ASC"
+                )
                 for _, d_row in discussions_df.iterrows():
                     with st.expander(
                         f"📌 [{d_row['category']}] {d_row['title']} — by @{d_row['author']}"
@@ -568,9 +576,10 @@ else:
                         st.write(d_row["content"])
                         st.caption(f"Posted: {d_row['timestamp']}")
                         st.write("---")
-                        replies_df = run_query(
-                            "SELECT author, content, timestamp FROM discussion_replies WHERE discussion_id = :d_id ORDER BY id ASC",
-                            params={"d_id": d_row["id"]},
+                        replies_df = (
+                            all_replies_df[all_replies_df["discussion_id"] == d_row["id"]]
+                            if not all_replies_df.empty and "discussion_id" in all_replies_df.columns
+                            else pd.DataFrame()
                         )
                         if not replies_df.empty:
                             st.markdown("**Replies:**")
