@@ -38,15 +38,17 @@ def init_db():
     )
     """)
     
-    # Insert Default Users (Password: MendingOurMistakes25)
+    # Insert or Force-Update Default Admin User (Password: MendingOurMistakes25)
     c.execute("""
-    INSERT OR IGNORE INTO users (username, password_hash, role, full_name, total_hours, tier, badges)
+    INSERT INTO users (username, password_hash, role, full_name, total_hours, tier, badges)
     VALUES ('admin', '490ebf932ec7349d4becc9eecbe9b1a5bd8b248eb3a696fa8d5e8211b81cd7e1', 'admin', 'Program Coordinator', 0.0, 'Bronze', '')
+    ON CONFLICT(username) DO UPDATE SET password_hash='490ebf932ec7349d4becc9eecbe9b1a5bd8b248eb3a696fa8d5e8211b81cd7e1'
     """)
     
     c.execute("""
-    INSERT OR IGNORE INTO users (username, password_hash, role, full_name, total_hours, tier, badges)
+    INSERT INTO users (username, password_hash, role, full_name, total_hours, tier, badges)
     VALUES ('volunteer1', '490ebf932ec7349d4becc9eecbe9b1a5bd8b248eb3a696fa8d5e8211b81cd7e1', 'volunteer', 'Jane Doe', 12.5, 'Silver', 'Orientation Complete')
+    ON CONFLICT(username) DO UPDATE SET password_hash='490ebf932ec7349d4becc9eecbe9b1a5bd8b248eb3a696fa8d5e8211b81cd7e1'
     """)
     
     # Submissions / Task Logs Table
