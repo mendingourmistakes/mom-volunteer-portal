@@ -5,6 +5,29 @@ import pandas as pd
 import streamlit as st
 from fpdf import FPDF
 
+
+# --- GOOGLE SHEETS SYNC MODULE ---
+def get_gsheets_conn():
+    """Attempt to get Streamlit Google Sheets Connection if secrets are configured."""
+    try:
+        from streamlit_gsheets import GSheetsConnection
+        if "connections" in st.secrets and "gsheets" in st.secrets["connections"]:
+            return st.connection("gsheets", type=GSheetsConnection)
+    except Exception:
+        pass
+    return None
+
+def sync_to_gsheets(sheet_name, df_data):
+    """Sync a pandas DataFrame to a named worksheet in Google Sheets if connected."""
+    conn = get_gsheets_conn()
+    if conn:
+        try:
+            conn.update(worksheet=sheet_name, data=df_data)
+            return True, "Successfully synced to Google Sheets!"
+        except Exception as e:
+            return False, f"Google Sheets Sync Error: {str(e)}"
+    return False, "Google Sheets not configured in secrets.toml"
+
 DB_FILE = "mom_volunteers.db"
 UPLOAD_DIR = "uploaded_resources"
 
@@ -1170,7 +1193,7 @@ else:
     elif app_mode == "🛠️ Coordinator Command Center":
         st.header("🛠️ Coordinator Command Center")
 
-        t_cmd1, t_cmd2, t_cmd3, t_cmd4 = st.tabs(["📝 Intake & Review Hub", "📢 Publish News & Calendar", "🆘 Support Tickets", "💡 Volunteer Suggestions"])
+        t_cmd1, t_cmd2, t_cmd3, t_cmd4, t_cmd5 = st.tabs(["📝 Intake & Review Hub", "📢 Publish News & Calendar", "🆘 Support Tickets", "💡 Volunteer Suggestions", "📊 Google Sheets & Export"])
 
         # TAB 1: INTAKE & REVIEW
         with t_cmd1:
