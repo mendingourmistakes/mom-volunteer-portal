@@ -1,0 +1,21 @@
+# Local SQLite database
+*.db
+*.sqlite
+*.sqlite3
+
+# Uploaded volunteer files
+uploaded_resources/
+
+# Python cache & virtualenv
+__pycache__/
+*.py[cod]
+.venv/
+env/
+venv/
+
+# Streamlit secrets & local config
+.streamlit/secrets.toml
+
+# OS garbage
+.DS_Store
+Thumbs.db
