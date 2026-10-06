@@ -92,8 +92,12 @@ def generate_pdf_letter(full_name, username, total_hours, tier, badges):
 @st.cache_resource
 def get_db_engine():
     db_url = st.secrets["postgres"]["url"]
-    return sqlalchemy.create_engine(db_url)
-
+    return sqlalchemy.create_engine(
+        db_url,
+        connect_args={"sslmode": "require"},
+        pool_pre_ping=True
+    )
+    
 def run_query(query, params=None):
     engine = get_db_engine()
     with engine.connect() as conn:
