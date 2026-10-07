@@ -135,6 +135,9 @@ def generate_pdf_letter(full_name, username, total_hours, tier, badges):
     return pdf.output()
 
 
+# Performance Optimization: Cache init_db with @st.cache_resource so schema
+# setup and initial data seeding run only once per app startup instead of on every Streamlit rerun.
+@st.cache_resource
 def init_db():
     conn = sqlite3.connect(DB_FILE)
     c = conn.cursor()
@@ -271,6 +274,14 @@ def init_db():
             timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
         )
     """)
+
+    # Performance Optimization: Add database indexes on frequently queried and filtered columns
+    c.execute("CREATE INDEX IF NOT EXISTS idx_tasks_assigned_volunteer ON tasks(assigned_volunteer)")
+    c.execute("CREATE INDEX IF NOT EXISTS idx_tasks_status ON tasks(status)")
+    c.execute("CREATE INDEX IF NOT EXISTS idx_messages_participants ON messages(sender, recipient)")
+    c.execute("CREATE INDEX IF NOT EXISTS idx_discussion_replies_discussion_id ON discussion_replies(discussion_id)")
+    c.execute("CREATE INDEX IF NOT EXISTS idx_support_tickets_volunteer ON support_tickets(volunteer)")
+    c.execute("CREATE INDEX IF NOT EXISTS idx_users_logged_hours ON users(logged_hours DESC)")
 
     # Seed Default Users
     c.execute("SELECT COUNT(*) FROM users")
