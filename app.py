@@ -353,7 +353,6 @@ else:
             for _, row in tasks_df.iterrows():
                 badge_txt = "🟢 Open Task" if row['status'] == 'Open' else f"🟡 Assigned to You ({row['status']})"
                 
-                # Check active timer status
                 conn = sqlite3.connect(DB_FILE)
                 t_check = conn.execute("SELECT status FROM active_timers WHERE username=? AND task_code=?", (curr_user['username'], row['task_code'])).fetchone()
                 conn.close()
@@ -373,7 +372,6 @@ else:
 
                     st.markdown("---")
                     
-                    # ACTION CONTROLS INSIDE ACCORDION
                     c1, c2, c3 = st.columns(3)
                     
                     if row['status'] == 'Open':
@@ -393,7 +391,6 @@ else:
                             st.warning("Task released.")
                             st.rerun()
 
-                        # Work Timer Start / Pause / Stop
                         st.markdown(f"**Work Timer Status:** `{timer_state}`")
                         tc1, tc2, tc3 = st.columns(3)
                         if timer_state != "Running":
@@ -419,7 +416,6 @@ else:
                                 conn.close()
                                 st.success("Timer stopped. Hours ready for submission.")
 
-                        # Submit Work Form
                         with st.form(key=f"sub_{row['id']}"):
                             s_notes = st.text_area("Submission Notes / Deliverable Summary:", value=row['submission_notes'] if row['submission_notes'] else "")
                             if st.form_submit_button("🚀 Submit Task"):
