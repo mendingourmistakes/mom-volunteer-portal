@@ -2,7 +2,7 @@
 primaryColor = "#2E1A47"
 backgroundColor = "#FFFFFF"
 secondaryBackgroundColor = "#F4F1F8"
-textColor = "#1a1a1a"
+textColor = "#2D3748"
 font = "sans serif"
 
 [server]
