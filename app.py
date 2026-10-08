@@ -56,7 +56,7 @@ def generate_pdf_letter(full_name, username, total_hours, tier, badges):
     pdf.add_page()
     pdf.set_margins(20, 20, 20)
 
-    # Header Banner
+    # Header Banner (Dark Royal Purple #2E1A47)
     pdf.set_fill_color(46, 26, 71)
     pdf.rect(0, 0, 210, 35, "F")
 
@@ -83,7 +83,7 @@ def generate_pdf_letter(full_name, username, total_hours, tier, badges):
 
     # Body
     pdf.set_font("Helvetica", "", 11)
-    pdf.set_text_color(45, 55, 72)
+    pdf.set_text_color(44, 44, 44)
 
     date_str = pd.Timestamp.now().strftime("%B %d, %Y")
     pdf.cell(0, 8, clean_pdf_text(f"Date: {date_str}"), ln=True)
@@ -172,7 +172,35 @@ def init_db():
             assigned_volunteer TEXT DEFAULT NULL,
             submission_notes TEXT DEFAULT NULL,
             proof_file_path TEXT DEFAULT '',
-            proof_file_name TEXT DEFAULT ''
+            proof_file_name TEXT DEFAULT '',
+            completed_date TEXT DEFAULT NULL
+        )
+    """)
+
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS time_logs (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            username TEXT NOT NULL,
+            task_code TEXT NOT NULL,
+            task_title TEXT NOT NULL,
+            hours_logged REAL NOT NULL,
+            work_date TEXT NOT NULL,
+            notes TEXT DEFAULT '',
+            timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS housing_pipeline (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            unit_code TEXT NOT NULL,
+            site_location TEXT NOT NULL,
+            participant_name TEXT NOT NULL,
+            construction_status TEXT DEFAULT 'Under Construction',
+            monthly_rent REAL DEFAULT 0.0,
+            total_credited REAL DEFAULT 0.0,
+            purchase_price REAL DEFAULT 150000.0,
+            deed_transfer_status TEXT DEFAULT 'In Lease Agreement'
         )
     """)
 
@@ -315,107 +343,17 @@ def init_db():
             default_users,
         )
 
-    # Seed Default Tasks
-    c.execute("SELECT COUNT(*) FROM tasks")
+    # Seed Housing Pipeline
+    c.execute("SELECT COUNT(*) FROM housing_pipeline")
     if c.fetchone()[0] == 0:
-        sample_tasks = [
-            (
-                "FUND-101",
-                "Community Outreach & Donation Requests (Batch of 5)",
-                "Community Outreach & Fundraising",
-                "Node 1: Dyer St Plaza Hub (Malvern)",
-                "Grants & Master Administration",
-                1,
-                2.0,
-                "",
-                "",
-                "Securing community sponsors and local donations funds emergency assistance for court-involved parents.",
-                "1. Use the Outreach Email Templates provided in the hub.\n2. Send 5 outreach emails to local businesses or churches.\n3. Upload PDF or screenshot proof of sent emails.",
-                "List of 5 organizations contacted + PDF/screenshot proof attached.",
-                "Open",
-                None,
-                None,
-                "",
-                ""
-            ),
-            (
-                "ANN-101",
-                "Legal Readiness Binder Audit",
-                "Civil Legal Navigation",
-                "Node 1: Dyer St Plaza Hub (Malvern)",
-                "Civil Legal Navigation (ANN)",
-                1,
-                2.0,
-                "",
-                "",
-                "M.O.M. supports pro se parents by organizing Legal Readiness Binders to prevent bench warrants and preserve custody.",
-                "1. Review uploaded binder checklist.\n2. Verify tabs 1-5 completeness.\n3. Format clean index.",
-                "Completed 5-Tab Digital Index PDF ready for CALES review.",
-                "Open",
-                None,
-                None,
-                "",
-                ""
-            ),
-            (
-                "AHTA-201",
-                "Salvage Materials Cataloging",
-                "Heritage Trade & Logistics",
-                "Node 3: Industrial Rd Trade Yard (Malvern)",
-                "Heritage Trade & Salvage (AHTA)",
-                2,
-                1.5,
-                "",
-                "",
-                "Reclaimed brick and timber sales generate revenue while training trade apprentices.",
-                "1. Inspect incoming material photos.\n2. Log quantities, dimensions, and architectural era into catalog.",
-                "10 cataloged inventory entries submitted to AHTA Salvage Depot.",
-                "Open",
-                None,
-                None,
-                "",
-                ""
-            ),
+        sample_housing = [
+            ("SABS-UNIT-01", "Node 1: Dyer St Plaza Hub (Malvern)", "Family Integration Test Case A", "Completed / Occupied", 750.0, 9000.0, 145000.0, "Lease-to-Own Active"),
+            ("SABS-UNIT-02", "Node 2: Chandler Rd Campus (Traskwood)", "Pending Apprentice Assignment", "Under Construction", 0.0, 0.0, 150000.0, "Pre-Lease Phase"),
         ]
-        c.executemany(
-            """
-            INSERT INTO tasks (task_code, title, category, site_node, module, tier_required, time_est, file_path, file_name, why_it_matters, instructions, expected_deliverable, status, assigned_volunteer, submission_notes, proof_file_path, proof_file_name)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """,
-            sample_tasks,
-        )
-
-    # Seed Announcements
-    c.execute("SELECT COUNT(*) FROM announcements")
-    if c.fetchone()[0] == 0:
-        c.execute(
-            "INSERT INTO announcements (title, content, date_posted, category) VALUES (?, ?, ?, ?)",
-            ("🚀 Welcome to the M.O.M. Volunteer Portal!", "We are excited to launch our centralized task marketplace, resource center, and communication hub across our 7 regional site nodes. Thank you for standing with local families!", "2026-09-30", "Organization Update")
-        )
-        c.execute(
-            "INSERT INTO announcements (title, content, date_posted, category) VALUES (?, ?, ?, ?)",
-            ("⚖️ Family Court Docket Support Drive", "We are currently preparing 50 Legal Readiness Binders for Judge Burnett's upcoming docket in Malvern. Claim task ANN-101 to assist!", "2026-09-29", "Urgent Call to Action")
-        )
-
-    # Seed Calendar Events
-    c.execute("SELECT COUNT(*) FROM calendar_events")
-    if c.fetchone()[0] == 0:
-        c.execute(
-            "INSERT INTO calendar_events (title, event_date, time_str, location, description) VALUES (?, ?, ?, ?, ?)",
-            ("Monthly Volunteer Orientation & Q&A", "2026-10-05", "6:00 PM - 7:00 PM", "Virtual (Zoom) / Node 1 Plaza Hub", "Join our team for a live walkthrough of upcoming CoC milestones, trade salvage projects, and tier 2 training.")
-        )
-        c.execute(
-            "INSERT INTO calendar_events (title, event_date, time_str, location, description) VALUES (?, ?, ?, ?, ?)",
-            ("Good360 Care Goods Intake & Staging Day", "2026-10-12", "10:00 AM - 2:00 PM", "Node 2: Chandler Rd Campus (Traskwood)", "Unboxing and sorting essential household goods, cribs, and care kits for reunifying kinship families.")
-        )
-
-    # Seed Sample Discussion
-    c.execute("SELECT COUNT(*) FROM discussions")
-    if c.fetchone()[0] == 0:
-        c.execute(
-            "INSERT INTO discussions (author, title, category, content) VALUES (?, ?, ?, ?)",
-            ("Volunteer Coordinator", "Tips for Reaching Out to Local Businesses", "Fundraising & Outreach", "When contacting local business owners for sponsorships, emphasize how M.O.M. builds workforce trade skills and restores local families. Feel free to use Template 1 in the Task Marketplace!")
-        )
+        c.executemany("""
+            INSERT INTO housing_pipeline (unit_code, site_location, participant_name, construction_status, monthly_rent, total_credited, purchase_price, deed_transfer_status)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        """, sample_housing)
 
     conn.commit()
     conn.close()
@@ -432,49 +370,53 @@ st.set_page_config(
 st.markdown(
     """
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Merriweather:ital,wght@0,300;0,400;0,700;1,300&family=Playfair+Display:ital,wght@0,600;0,700;1,400&family=Inter:wght@400;500;600;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,400&family=DM+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap');
 
     body, .stApp {
-        background-color: #FFFFFF;
-        font-family: 'Merriweather', serif;
-        color: #2D3748;
+        background: linear-gradient(90deg, rgb(245, 239, 230), rgb(232, 221, 208)) !important;
+        font-family: 'DM Sans', sans-serif !important;
+        color: #1a1a1a !important;
+    }
+
+    .font-display {
+        font-family: 'Playfair Display', serif !important;
     }
 
     .mom-header {
-        background: linear-gradient(135deg, #2E1A47 0%, #153D62 100%);
-        padding: 2.2rem 2rem;
-        border-radius: 12px;
-        color: #FFFFFF;
+        background: #2E1A47;
+        padding: 2.5rem 2.5rem;
+        border-radius: 16px;
+        color: #ffffff;
         margin-bottom: 2rem;
-        box-shadow: 0 8px 24px rgba(46, 26, 71, 0.18);
-        border-bottom: 4px solid #B47A19;
+        box-shadow: 0 12px 30px rgba(46, 26, 71, 0.2);
     }
 
     .mom-header h1 {
-        font-family: 'Playfair Display', serif;
-        font-size: 2.4rem;
+        font-family: 'Playfair Display', serif !important;
+        font-size: 2.5rem;
         font-weight: 700;
-        color: #FFFFFF !important;
-        margin: 0 0 0.4rem 0;
+        color: #ffffff !important;
+        margin: 0 0 0.5rem 0;
+        letter-spacing: -1px;
     }
 
     .mom-header p {
-        font-family: 'Merriweather', serif;
+        font-family: 'DM Sans', sans-serif !important;
         font-size: 1.05rem;
-        color: #E0D7EA;
+        color: #d1c4e9;
         margin: 0;
     }
 
     .mom-badge-pill {
-        background-color: #F3EBF9;
-        color: #5B2C6F;
-        font-family: 'Inter', sans-serif;
+        background-color: #7e57c2;
+        color: #ffffff;
+        font-family: 'DM Sans', sans-serif;
         font-size: 0.75rem;
-        font-weight: 700;
+        font-weight: 600;
         text-transform: uppercase;
         letter-spacing: 0.08em;
-        padding: 4px 14px;
-        border-radius: 50px;
+        padding: 4px 12px;
+        border-radius: 9999px;
         display: inline-block;
         margin-bottom: 0.8rem;
     }
@@ -485,32 +427,35 @@ st.markdown(
     }
 
     .task-card {
-        background-color: #FFFFFF;
-        border: 1px solid #E0D7EA;
+        background-color: #fffdf1;
+        border: 1px solid #e9e5e1;
         border-left: 6px solid #2E1A47;
-        border-radius: 10px;
+        border-radius: 15px;
         padding: 1.5rem;
         margin-bottom: 1.5rem;
-        box-shadow: 0 4px 12px rgba(46, 26, 71, 0.05);
+        box-shadow: 0 4px 16px rgba(0,0,0,0.03);
+        transition: all 0.2s ease-in-out;
     }
 
     .stButton>button, div.stDownloadButton>button {
         background-color: #2E1A47 !important;
-        color: #FFFFFF !important;
-        font-family: 'Inter', sans-serif !important;
+        color: #ffffff !important;
+        font-family: 'DM Sans', sans-serif !important;
         font-weight: 600 !important;
-        border-radius: 8px !important;
+        border-radius: 9999px !important;
         border: none !important;
+        padding: 0.5rem 1.25rem !important;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.05);
     }
 
     .stButton>button:hover, div.stDownloadButton>button:hover {
-        background-color: #B47A19 !important;
-        box-shadow: 0 4px 12px rgba(180, 122, 25, 0.3) !important;
+        background-color: #7e57c2 !important;
+        transform: translateY(-2px);
     }
 
     section[data-testid="stSidebar"] {
-        background-color: #F8FAFC !important;
-        border-right: 1px solid #E0D7EA !important;
+        background-color: #f7f4ec !important;
+        border-right: 1px solid #ded8c9 !important;
     }
 </style>
 """,
@@ -525,8 +470,8 @@ if "user" not in st.session_state:
 st.sidebar.markdown(
     """
 <div style="text-align: center; padding-bottom: 1rem;">
-    <h2 style="font-family: 'Playfair Display', serif; color: #2E1A47; margin: 0;">Mending Our Mistakes</h2>
-    <p style="font-size: 0.8rem; color: #5B2C6F; font-style: italic;">A Parental Restoration Continuum</p>
+    <h2 style="font-family: 'Playfair Display', serif; color: #2E1A47; margin: 0; font-size: 1.4rem;">Mending Our Mistakes</h2>
+    <p style="font-size: 0.8rem; color: #7e57c2; font-style: italic;">A Parental Restoration Continuum</p>
 </div>
 """,
     unsafe_allow_html=True,
@@ -610,7 +555,10 @@ else:
 
     nav_options = [
         "📋 Volunteer Task Marketplace",
-        "📊 Live Impact & News Dashboard",
+        "⏱️ Task Time Logging & Activity",
+        "📅 Calendar & Completion Views",
+        "🏠 Build-to-Own Housing Pipeline",
+        "📊 Live Impact & Grant Match",
         "💬 Direct Messaging",
         "🗣️ Community Discussion Board",
         "🎓 Training & Tier Upgrade",
@@ -622,7 +570,7 @@ else:
 
     app_mode = st.radio("Portal View:", nav_options, horizontal=True)
 
-    # 1. VOLUNTEER TASK MARKETPLACE (VIEW B - ENHANCED WITH RELEASE & EDIT)
+    # 1. VOLUNTEER TASK MARKETPLACE
     if app_mode == "📋 Volunteer Task Marketplace":
         st.header(f"👋 Welcome, {curr_user['full_name']}!")
 
@@ -650,7 +598,7 @@ else:
 
         st.write("---")
         st.subheader("📋 Volunteer Task Marketplace")
-        st.caption("Browse tasks approved for your clearance tier. Claim tasks, manage active commitments, or edit your submissions.")
+        st.caption("Browse tasks approved for your clearance tier. Claim tasks, manage active commitments, or log your hours.")
 
         conn = sqlite3.connect(DB_FILE)
         categories_df = pd.read_sql_query("SELECT DISTINCT category FROM tasks", conn)
@@ -679,7 +627,7 @@ else:
                         f"""
                         <div class="task-card">
                             <span class="mom-badge-pill">{status_badge} | Tier {row['tier_required']} | {row['time_est']} Hours</span>
-                            <h3 style="margin-top: 0.4rem; color: #2E1A47;">[{row['task_code']}] {row['title']}</h3>
+                            <h3 style="margin-top: 0.4rem; color: #2E1A47; font-family: 'Playfair Display', serif;">[{row['task_code']}] {row['title']}</h3>
                             <p><strong>📂 Category:</strong> {row['category']} | <strong>📍 Site Node:</strong> {row['site_node']}</p>
                         </div>
                         """,
@@ -688,21 +636,10 @@ else:
 
                     st.markdown(f"#### 💡 Why This Matters\n{row['why_it_matters']}")
 
-                    if row["file_path"] and os.path.exists(row["file_path"]):
-                        with open(row["file_path"], "rb") as f:
-                            st.download_button(
-                                label=f"📥 Download Reference Resource File ({row['file_name']})",
-                                data=f.read(),
-                                file_name=row["file_name"],
-                                mime="application/octet-stream",
-                                key=f"dl_{row['id']}_{row['task_code']}"
-                            )
-
-                    with st.expander("📌 View Instructions & Deliverable Rules"):
+                    with st.expander("📌 View Instructions & Deliverables"):
                         st.markdown(f"**Step-by-Step Instructions:**\n{row['instructions']}")
                         st.markdown(f"**Expected Deliverable:**\n{row['expected_deliverable']}")
 
-                    # Action Controls
                     if row['status'] == 'Open':
                         if st.button(f"🙋 Claim This Task ({row['task_code']})", key=f"claim_{row['id']}"):
                             conn = sqlite3.connect(DB_FILE)
@@ -713,16 +650,15 @@ else:
                             )
                             conn.commit()
                             conn.close()
-                            st.success(f"Task {row['task_code']} claimed! You can now complete the work and submit your proof below.")
+                            st.success(f"Task {row['task_code']} claimed!")
                             st.rerun()
 
                     elif row['assigned_volunteer'] == curr_user['username']:
                         st.info(f"📌 Status: **{row['status']}**")
                         
-                        # Task Release Button
                         col_rel1, col_rel2 = st.columns([1, 2])
                         with col_rel1:
-                            if st.button(f"↩️ Release Task Back to Marketplace", key=f"rel_{row['id']}"):
+                            if st.button(f"↩️ Release Task", key=f"rel_{row['id']}"):
                                 conn = sqlite3.connect(DB_FILE)
                                 c = conn.cursor()
                                 c.execute(
@@ -731,144 +667,238 @@ else:
                                 )
                                 conn.commit()
                                 conn.close()
-                                st.warning(f"Task {row['task_code']} released back to the public marketplace.")
+                                st.warning(f"Task {row['task_code']} released back to the marketplace.")
                                 st.rerun()
 
-                        # Edit / Submit Notes Form
                         with st.form(key=f"sub_form_{row['id']}"):
                             sub_notes = st.text_area(
-                                "Edit / Submit Completed Work / Notes / Email List:",
+                                "Completion Notes / Summary:",
                                 value=row['submission_notes'] if row['submission_notes'] else "",
-                                placeholder="List the 5 organizations contacted or paste your completion notes here...",
+                                placeholder="Describe completed work...",
                             )
                             proof_file = st.file_uploader(
-                                "📎 Upload PDF or Screenshot Proof of Sent Emails / Output (Optional):",
+                                "📎 Attach Proof (PDF/Image):",
                                 type=["pdf", "png", "jpg", "jpeg", "docx"]
                             )
                             
-                            btn_label = "✏️ Update Submission" if row['status'] == 'Submitted / Under Review' else "🚀 Submit Work for Credit & Review"
-                            if st.form_submit_button(btn_label):
-                                if not sub_notes:
-                                    st.error("Please enter completion notes before submitting!")
-                                else:
-                                    p_path = row['proof_file_path']
-                                    p_name = row['proof_file_name']
-                                    if proof_file is not None:
-                                        p_name = proof_file.name
-                                        p_path = os.path.join(UPLOAD_DIR, f"proof_{curr_user['username']}_{p_name}")
-                                        with open(p_path, "wb") as pf:
-                                            pf.write(proof_file.getbuffer())
+                            if st.form_submit_button("🚀 Submit Work for Review"):
+                                p_path = row['proof_file_path']
+                                p_name = row['proof_file_name']
+                                if proof_file is not None:
+                                    p_name = proof_file.name
+                                    p_path = os.path.join(UPLOAD_DIR, f"proof_{curr_user['username']}_{p_name}")
+                                    with open(p_path, "wb") as pf:
+                                        pf.write(proof_file.getbuffer())
 
-                                    conn = sqlite3.connect(DB_FILE)
-                                    c = conn.cursor()
-                                    c.execute(
-                                        """
-                                        UPDATE tasks 
-                                        SET status='Submitted / Under Review', submission_notes=?, proof_file_path=?, proof_file_name=? 
-                                        WHERE id=?
-                                        """,
-                                        (sub_notes, p_path, p_name, row["id"])
-                                    )
-                                    conn.commit()
-                                    conn.close()
-                                    st.success(f"Submission updated for {row['task_code']}! Coordinator will review and award your hours.")
-                                    st.rerun()
+                                conn = sqlite3.connect(DB_FILE)
+                                c = conn.cursor()
+                                c.execute(
+                                    """
+                                    UPDATE tasks 
+                                    SET status='Submitted / Under Review', submission_notes=?, proof_file_path=?, proof_file_name=? 
+                                    WHERE id=?
+                                    """,
+                                    (sub_notes, p_path, p_name, row["id"])
+                                )
+                                conn.commit()
+                                conn.close()
+                                st.success("Task submitted for coordinator review!")
+                                st.rerun()
 
-        st.write("---")
-        st.subheader("📜 Your Submitted & Approved Task History")
+    # 2. TASK TIME LOGGING & ACTIVITY
+    elif app_mode == "⏱️ Task Time Logging & Activity":
+        st.header("⏱️ Task Time Logging & Activity Tracker")
+        st.caption("Log precise time spent working on tasks, projects, or meetings to accumulate certified service hours.")
+
         conn = sqlite3.connect(DB_FILE)
-        df_my_history = pd.read_sql_query(
-            "SELECT task_code, title, time_est, status, submission_notes FROM tasks WHERE assigned_volunteer = ?",
-            conn,
-            params=(curr_user['username'],)
-        )
+        my_tasks = pd.read_sql_query("SELECT task_code, title FROM tasks WHERE assigned_volunteer = ? OR status='Open'", conn, params=(curr_user['username'],))
         conn.close()
-        if df_my_history.empty:
-            st.caption("You haven't submitted any tasks yet.")
-        else:
-            st.dataframe(df_my_history, use_container_width=True)
 
-    # 2. LIVE IMPACT & NEWS DASHBOARD (CALENDAR, UPDATES, STRATEGIC PLANS)
-    elif app_mode == "📊 Live Impact & News Dashboard":
-        st.header("📊 M.O.M. Community Impact & News Dashboard")
-        st.caption("Stay Informed on Organization News, Upcoming Calendar Events, Strategic Milestones & Pulse Checks")
+        with st.form("log_time_form"):
+            st.subheader("📝 Record Time Entry")
+            t_choice = st.selectbox(
+                "Select Associated Task:",
+                my_tasks["task_code"].tolist() if not my_tasks.empty else ["GENERAL-001"],
+                format_func=lambda code: f"[{code}] {my_tasks.loc[my_tasks['task_code']==code, 'title'].values[0]}" if not my_tasks.empty and code in my_tasks['task_code'].values else "General Volunteer Service"
+            )
+            
+            task_title_match = my_tasks.loc[my_tasks['task_code']==t_choice, 'title'].values[0] if not my_tasks.empty and t_choice in my_tasks['task_code'].values else "General Service"
+            
+            col_t1, col_t2 = st.columns(2)
+            logged_hrs = col_t1.number_input("Hours Spent:", min_value=0.25, max_value=12.0, value=2.0, step=0.25)
+            work_date = col_t2.date_input("Date Performed:", value=pd.Timestamp.now())
+            
+            time_notes = st.text_area("Detailed Work Performed / Notes:")
 
-        # Top Metric Cards
-        m1, m2, m3, m4 = st.columns(4)
-        m1.metric("⚖️ Legal Binders Checked", "48 Binders", "+12 This Month")
-        m2.metric("🧸 Good360 Care Packages", "185 Families", "+35 Distributed")
-        m3.metric("🪵 AHTA Reclaimed Materials", "3,400 sq. ft.", "+800 sq. ft.")
-        m4.metric("🚐 Micro-Transit Rides", "112 Trips", "Saline & Hot Spring")
+            if st.form_submit_button("✅ Submit Time Log"):
+                conn = sqlite3.connect(DB_FILE)
+                c = conn.cursor()
+                c.execute(
+                    "INSERT INTO time_logs (username, task_code, task_title, hours_logged, work_date, notes) VALUES (?, ?, ?, ?, ?, ?)",
+                    (curr_user['username'], t_choice, task_title_match, logged_hrs, str(work_date), time_notes)
+                )
+                c.execute(
+                    "UPDATE users SET logged_hours = logged_hours + ? WHERE username = ?",
+                    (logged_hrs, curr_user['username'])
+                )
+                c.execute("UPDATE tasks SET status='Approved & Completed', completed_date=? WHERE task_code=? AND (assigned_volunteer=? OR assigned_volunteer IS NULL)", (str(work_date), t_choice, curr_user['username']))
+                conn.commit()
+                conn.close()
+                st.success(f"Successfully logged {logged_hrs} hours for [{t_choice}]!")
+                st.session_state["user"]["logged_hours"] += logged_hrs
+                st.rerun()
 
         st.write("---")
+        st.subheader("📜 Your Detailed Time Logs")
+        conn = sqlite3.connect(DB_FILE)
+        df_logs = pd.read_sql_query("SELECT task_code, task_title, hours_logged, work_date, notes, timestamp FROM time_logs WHERE username = ? ORDER BY id DESC", conn, params=(curr_user['username'],))
+        conn.close()
 
-        # Layout Split: Announcements vs Calendar
-        col_dash1, col_dash2 = st.columns(2)
+        if df_logs.empty:
+            st.caption("No time logs recorded yet.")
+        else:
+            st.dataframe(df_logs, use_container_width=True)
 
-        with col_dash1:
-            st.subheader("📢 Official Announcements & Updates")
+    # 3. CALENDAR & COMPLETION VIEWS
+    elif app_mode == "📅 Calendar & Completion Views":
+        st.header("📅 Calendar & Task Completion Views")
+        st.caption("Inspect completed tasks and organizational activities across multiple calendar and daily breakdown views.")
+
+        t_cal1, t_cal2, t_cal3 = st.tabs(["🗓️ My Completed Tasks Calendar", "📋 Daily Organization Pulse", "📅 Event Schedule"])
+
+        with t_cal1:
+            st.subheader(f"🗓️ @{curr_user['username']}'s Completed Tasks by Date")
             conn = sqlite3.connect(DB_FILE)
-            df_ann = pd.read_sql_query("SELECT title, content, date_posted, category FROM announcements ORDER BY id DESC LIMIT 5", conn)
+            df_my_comp = pd.read_sql_query(
+                "SELECT task_code, title, category, time_est, completed_date FROM tasks WHERE assigned_volunteer = ? AND status = 'Approved & Completed' ORDER BY completed_date DESC",
+                conn,
+                params=(curr_user['username'],)
+            )
             conn.close()
 
-            if df_ann.empty:
-                st.caption("No announcements posted yet.")
+            if df_my_comp.empty:
+                st.info("You have no completed tasks recorded with completion dates yet.")
             else:
-                for _, a_row in df_ann.iterrows():
-                    st.info(f"📌 **[{a_row['category']}] {a_row['title']}** ({a_row['date_posted']})\n\n{a_row['content']}")
+                st.dataframe(df_my_comp, use_container_width=True)
+                for date_val, group in df_my_comp.groupby('completed_date'):
+                    display_date = date_val if date_val else "Unscheduled Date"
+                    with st.expander(f"📁 Date: {display_date} ({len(group)} tasks completed)"):
+                        for _, r in group.iterrows():
+                            st.markdown(f"- **[{r['task_code']}] {r['title']}** (`{r['category']}`) — {r['time_est']} hrs")
 
+        with t_cal2:
+            st.subheader("👥 Organization-Wide Daily Completion Pulse")
+            conn = sqlite3.connect(DB_FILE)
+            all_time_logs = pd.read_sql_query("SELECT username, task_code, task_title, hours_logged, work_date, notes FROM time_logs ORDER BY work_date DESC", conn)
+            conn.close()
+
+            if all_time_logs.empty:
+                st.info("No time logs recorded across the organization yet.")
+            else:
+                unique_dates = all_time_logs['work_date'].unique().tolist()
+                selected_date = st.selectbox("📅 Select Date to Inspect Organization Activity:", unique_dates)
+                filtered_logs = all_time_logs[all_time_logs['work_date'] == selected_date]
+                st.metric("Total Hours Logged on this Date", f"{filtered_logs['hours_logged'].sum():.1f} Hours")
+                for _, log in filtered_logs.iterrows():
+                    st.info(f"👤 **@{log['username']}** completed **[{log['task_code']}] {log['task_title']}** ({log['hours_logged']} hrs)\n\n> *Notes:* {log['notes']}")
+
+        with t_cal3:
+            st.subheader("📅 Official M.O.M. Calendar Events")
+            conn = sqlite3.connect(DB_FILE)
+            df_evts = pd.read_sql_query("SELECT title, event_date, time_str, location, description FROM calendar_events ORDER BY event_date ASC", conn)
+            conn.close()
+
+            if df_evts.empty:
+                st.caption("No upcoming calendar events.")
+            else:
+                for _, e in df_evts.iterrows():
+                    st.markdown(f"""
+                    <div class="task-card">
+                        <span class="mom-badge-pill">🗓️ {e['event_date']} | {e['time_str']}</span>
+                        <h3 style="margin-top: 0.4rem; color: #2E1A47;">{e['title']}</h3>
+                        <p><strong>📍 Location:</strong> {e['location']}</p>
+                        <p>{e['description']}</p>
+                    </div>
+                    """, unsafe_allow_html=True)
+
+    # 4. BUILD-TO-OWN HOUSING PIPELINE
+    elif app_mode == "🏠 Build-to-Own Housing Pipeline":
+        st.header("🏠 The 'Build-to-Own' Housing Pipeline")
+        st.caption("Tracking SABS technology composite housing units, apprentice construction progress, monthly rental payment credits, and deed transfers.")
+
+        conn = sqlite3.connect(DB_FILE)
+        housing_df = pd.read_sql_query("SELECT * FROM housing_pipeline", conn)
+        conn.close()
+
+        if housing_df.empty:
+            st.info("No housing units currently in the pipeline.")
+        else:
+            for _, h in housing_df.iterrows():
+                st.markdown(f"""
+                <div class="task-card">
+                    <span class="mom-badge-pill">🏠 Unit Code: {h['unit_code']} | Status: {h['construction_status']}</span>
+                    <h3 style="margin-top: 0.4rem; color: #2E1A47;">Participant: {h['participant_name']}</h3>
+                    <p><strong>📍 Location:</strong> {h['site_location']}</p>
+                    <p><strong>💰 Monthly Rent:</strong> ${h['monthly_rent']:,.2f} | <strong>Credited Toward Purchase:</strong> ${h['total_credited']:,.2f} /${h['purchase_price']:,.2f}</p>
+                    <p><strong>📜 Deed Transfer Stage:</strong> `{h['deed_transfer_status']}`</p>
+                </div>
+                """, unsafe_allow_html=True)
+
+        if curr_user["role"] in ["Coordinator", "Admin"]:
             st.write("---")
-            st.subheader("🚀 Strategic Milestones & Pre-Launch Roadmap")
-            st.markdown("""
-            * **Phase 1: Pre-Launch Foundation (Current)**
-              * 5-Tab Legal Readiness Binder standardization.
-              * Google Ad Grant compliance repair for `mendingourmistakes.org`.
-              * Initial Good360 Requisition & Community Outreach Drive.
-            * **Phase 2: Regional Site Node Activation (Upcoming)**
-              * Node 1 (Malvern Plaza Hub) & Node 2 (Traskwood Campus) staging.
-              * Heritage Trade & Salvage (AHTA) depot inventory cataloging.
-            * **Phase 3: Full Continuum of Care (CoC) Launch**
-              * Court Appointed Lived-Experience Specialists (CALES) deployment.
-            """)
+            st.subheader("➕ Add / Update Housing Unit")
+            with st.form("housing_form"):
+                u_code = st.text_input("Unit Code (e.g. SABS-UNIT-03):")
+                u_loc = st.text_input("Site Location:", value="Node 2: Chandler Rd Campus (Traskwood)")
+                u_part = st.text_input("Participant Family Name:")
+                u_stat = st.selectbox("Construction Status:", ["Under Construction", "Completed / Occupied"])
+                u_rent = st.number_input("Monthly Rent Amount ($):", value=750.0)
+                u_cred = st.number_input("Total Credited Toward Purchase ($):", value=0.0)
+                u_price = st.number_input("Total Purchase Price ($):", value=150000.0)
+                u_deed = st.text_input("Deed Transfer Status:", value="Lease-to-Own Active")
 
-        with col_dash2:
-            st.subheader("📅 Upcoming Calendar & Workday Schedule")
-            conn = sqlite3.connect(DB_FILE)
-            df_cal = pd.read_sql_query("SELECT title, event_date, time_str, location, description FROM calendar_events ORDER BY id ASC LIMIT 5", conn)
-            conn.close()
-
-            if df_cal.empty:
-                st.caption("No calendar events scheduled yet.")
-            else:
-                for _, c_row in df_cal.iterrows():
-                    with st.container():
-                        st.markdown(f"🗓️ **{c_row['event_date']} ({c_row['time_str']})**")
-                        st.markdown(f"**{c_row['title']}**")
-                        st.caption(f"📍 Location: {c_row['location']}\n\n{c_row['description']}")
-                        st.write("---")
-
-            # Quick Volunteer Pulse Poll Feature
-            st.subheader("🗳️ Volunteer Pulse Check")
-            st.markdown("**Question: What volunteer work session time works best for your schedule?**")
-            with st.form("pulse_poll_form"):
-                poll_opt = st.radio("Select your preferred time slot:", [
-                    "Weekday Evenings (6:00 PM - 8:00 PM)",
-                    "Saturday Mornings (9:00 AM - 12:00 PM)",
-                    "Self-Paced / Flexible Remote Hours",
-                ])
-                if st.form_submit_button("Submit Vote"):
+                if st.form_submit_button("Save Housing Unit Record"):
                     conn = sqlite3.connect(DB_FILE)
                     c = conn.cursor()
-                    c.execute("INSERT INTO poll_votes (username, option_chosen) VALUES (?, ?)", (curr_user['username'], poll_opt))
+                    c.execute("""
+                        INSERT INTO housing_pipeline (unit_code, site_location, participant_name, construction_status, monthly_rent, total_credited, purchase_price, deed_transfer_status)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                    """, (u_code, u_loc, u_part, u_stat, u_rent, u_cred, u_price, u_deed))
                     conn.commit()
                     conn.close()
-                    st.success("Thank you for your feedback! Vote recorded.")
+                    st.success("Housing unit saved!")
+                    st.rerun()
 
-    # 3. DIRECT MESSAGING (VOLUNTEERS & COORDINATORS)
+    # 5. LIVE IMPACT & GRANT MATCH
+    elif app_mode == "📊 Live Impact & Grant Match":
+        st.header("📊 Community Impact & Federal Grant Match Calculator")
+        st.caption("Calculate non-federal volunteer match value at the Independent Sector rate ($33.49/hr) for CDBG and grant applications.")
+
+        conn = sqlite3.connect(DB_FILE)
+        cursor = conn.cursor()
+        cursor.execute("SELECT SUM(logged_hours) FROM users")
+        total_all_hours = cursor.fetchone()[0] or 0.0
+        conn.close()
+
+        INDEPENDENT_SECTOR_RATE = 33.49
+        total_match_value = total_all_hours * INDEPENDENT_SECTOR_RATE
+
+        m1, m2, m3 = st.columns(3)
+        m1.metric("👥 Total Cumulative Volunteer Hours", f"{total_all_hours:.1f} Hours")
+        m2.metric("💵 Independent Sector Rate", f"${INDEPENDENT_SECTOR_RATE:.2f} / hr")
+        m3.metric("🤝 Total Non-Federal Match Value", f"${total_match_value:,.2f}")
+
+        st.write("---")
+        st.subheader("📢 Official Announcements")
+        conn = sqlite3.connect(DB_FILE)
+        df_ann = pd.read_sql_query("SELECT title, content, date_posted, category FROM announcements ORDER BY id DESC LIMIT 5", conn)
+        conn.close()
+        for _, a_row in df_ann.iterrows():
+            st.info(f"📌 **[{a_row['category']}] {a_row['title']}** ({a_row['date_posted']})\n\n{a_row['content']}")
+
+    # 6. DIRECT MESSAGING
     elif app_mode == "💬 Direct Messaging":
         st.header("💬 Internal Direct Messaging")
-        st.caption("Send private messages to coordinators or fellow volunteers.")
-
         conn = sqlite3.connect(DB_FILE)
         all_users = pd.read_sql_query("SELECT username, full_name, role FROM users WHERE username != ?", conn, params=(curr_user['username'],))
         conn.close()
@@ -877,554 +907,166 @@ else:
             st.info("No other registered users found.")
         else:
             selected_recipient = st.selectbox(
-                "Select Recipient to Message:",
+                "Select Recipient:",
                 all_users["username"].tolist(),
-                format_func=lambda u: f"{all_users.loc[all_users['username']==u, 'full_name'].values[0]} (@{u} - {all_users.loc[all_users['username']==u, 'role'].values[0]})"
+                format_func=lambda u: f"{all_users.loc[all_users['username']==u, 'full_name'].values[0]} (@{u})"
             )
 
-            # Composition Box
             with st.form("send_msg_form"):
                 msg_body = st.text_area("Write Your Message:")
                 if st.form_submit_button("📨 Send Message"):
                     if msg_body:
                         conn = sqlite3.connect(DB_FILE)
                         c = conn.cursor()
-                        c.execute(
-                            "INSERT INTO messages (sender, recipient, message) VALUES (?, ?, ?)",
-                            (curr_user['username'], selected_recipient, msg_body)
-                        )
+                        c.execute("INSERT INTO messages (sender, recipient, message) VALUES (?, ?, ?)", (curr_user['username'], selected_recipient, msg_body))
                         conn.commit()
                         conn.close()
-                        st.success(f"Message sent to @{selected_recipient}!")
+                        st.success("Message sent!")
                         st.rerun()
 
             st.write("---")
-            st.subheader("📬 Conversation History with @" + str(selected_recipient))
             conn = sqlite3.connect(DB_FILE)
-            msgs = pd.read_sql_query(
-                """
-                SELECT sender, recipient, message, timestamp FROM messages 
-                WHERE (sender = ? AND recipient = ?) OR (sender = ? AND recipient = ?)
-                ORDER BY id ASC
-                """,
-                conn,
-                params=(curr_user['username'], selected_recipient, selected_recipient, curr_user['username'])
-            )
+            msgs = pd.read_sql_query("SELECT sender, message, timestamp FROM messages WHERE (sender = ? AND recipient = ?) OR (sender = ? AND recipient = ?) ORDER BY id ASC", conn, params=(curr_user['username'], selected_recipient, selected_recipient, curr_user['username']))
             conn.close()
+            for _, m in msgs.iterrows():
+                align = "👉 **You**" if m['sender'] == curr_user['username'] else f"👈 **@{m['sender']}**"
+                st.markdown(f"{align} *({m['timestamp']})*:\n>{m['message']}")
 
-            if msgs.empty:
-                st.caption("No message history with this user yet.")
-            else:
-                for _, m in msgs.iterrows():
-                    align = "👉 **You**" if m['sender'] == curr_user['username'] else f"👈 **@{m['sender']}**"
-                    st.markdown(f"{align} *({m['timestamp']})*:\n>{m['message']}")
-
-    # 4. COMMUNITY DISCUSSION BOARD
+    # 7. COMMUNITY DISCUSSION BOARD
     elif app_mode == "🗣️ Community Discussion Board":
         st.header("🗣️ Community Discussion Board")
-        st.caption("Public Forum for Team Ideas, Q&A, and General Community Discussions")
-
-        t_disc1, t_disc2 = st.tabs(["💬 Active Topics & Threads", "➕ Start New Discussion Topic"])
-
-        with t_disc1:
+        t_d1, t_d2 = st.tabs(["💬 Active Topics", "➕ Start Topic"])
+        with t_d1:
             conn = sqlite3.connect(DB_FILE)
-            discussions_df = pd.read_sql_query("SELECT id, author, title, category, content, timestamp FROM discussions ORDER BY id DESC", conn)
+            disc = pd.read_sql_query("SELECT id, author, title, category, content, timestamp FROM discussions ORDER BY id DESC", conn)
             conn.close()
-
-            if discussions_df.empty:
-                st.info("No discussion topics posted yet. Be the first to start a topic!")
-            else:
-                for _, d_row in discussions_df.iterrows():
-                    with st.expander(f"📌 [{d_row['category']}] {d_row['title']} (by @{d_row['author']} on {d_row['timestamp']})"):
-                        st.markdown(d_row['content'])
-                        st.write("---")
-                        
-                        # Fetch Replies
-                        conn = sqlite3.connect(DB_FILE)
-                        replies_df = pd.read_sql_query(
-                            "SELECT author, content, timestamp FROM discussion_replies WHERE discussion_id = ? ORDER BY id ASC",
-                            conn,
-                            params=(d_row['id'],)
-                        )
-                        conn.close()
-
-                        st.markdown("**Replies:**")
-                        if replies_df.empty:
-                            st.caption("No replies yet.")
-                        else:
-                            for _, r_row in replies_df.iterrows():
-                                st.markdown(f"💬 **@{r_row['author']}** *({r_row['timestamp']})*:\n{r_row['content']}")
-
-                        # Reply Form
-                        with st.form(key=f"reply_form_{d_row['id']}"):
-                            reply_text = st.text_input("Post a reply:")
-                            if st.form_submit_button("Post Reply"):
-                                if reply_text:
-                                    conn = sqlite3.connect(DB_FILE)
-                                    c = conn.cursor()
-                                    c.execute(
-                                        "INSERT INTO discussion_replies (discussion_id, author, content) VALUES (?, ?, ?)",
-                                        (d_row['id'], curr_user['username'], reply_text)
-                                    )
-                                    conn.commit()
-                                    conn.close()
-                                    st.success("Reply posted!")
-                                    st.rerun()
-
-        with t_disc2:
-            with st.form("new_topic_form"):
-                top_title = st.text_input("Topic Title:")
-                top_cat = st.selectbox("Category:", ["General Discussion", "Fundraising & Outreach", "Civil Legal Navigation", "Heritage Trade & Salvage", "Ideas & Brainstorming"])
-                top_content = st.text_area("Topic Description / Discussion Questions:")
-                if st.form_submit_button("Publish Discussion Topic"):
-                    if top_title and top_content:
-                        conn = sqlite3.connect(DB_FILE)
-                        c = conn.cursor()
-                        c.execute(
-                            "INSERT INTO discussions (author, title, category, content) VALUES (?, ?, ?, ?)",
-                            (curr_user['full_name'], top_title, top_cat, top_content)
-                        )
-                        conn.commit()
-                        conn.close()
-                        st.success("Discussion topic published!")
-                        st.rerun()
-
-    # 5. TRAINING & TIER UPGRADE
-    elif app_mode == "🎓 Training & Tier Upgrade":
-        st.header("🎓 Interactive Micro-Training & Auto-Tier Unlocking")
-        st.caption("Complete a 3-Minute Orientation Quiz to Upgrade Your Volunteer Clearance Tier Automatically!")
-
-        st.subheader("🔒 Tier 2 Clearance Quiz: Privacy & Logistics Etiquette")
-        with st.form("quiz_tier2_form"):
-            q1 = st.radio(
-                "1. What is the primary purpose of M.O.M.'s 5-Tab Legal Readiness Binders?",
-                [
-                    "To store random documents",
-                    "To provide standardized, court-admissible proof of compliance for pro se parents",
-                    "To file lawsuit appeals",
-                ],
-            )
-            q2 = st.radio(
-                "2. Can Good360 donated care goods be resold or auctioned?",
-                [
-                    "Yes, to raise funds",
-                    "No, Good360 rules strictly prohibit resale or bartering",
-                    "Only with manager approval",
-                ],
-            )
-            q3 = st.radio(
-                "3. What is the proper procedure if a participant shares sensitive court or health data?",
-                [
-                    "Post it on social media",
-                    "Maintain strict confidentiality under HIPAA and court navigation rules",
-                    "Ignore it",
-                ],
-            )
-
-            if st.form_submit_button("Submit Quiz for Tier Upgrade"):
-                if (
-                    q1.startswith("To provide")
-                    and q2.startswith("No, Good360")
-                    and q3.startswith("Maintain")
-                ):
+            for _, d in disc.iterrows():
+                with st.expander(f"📌 [{d['category']}] {d['title']} (by @{d['author']})"):
+                    st.markdown(d['content'])
+        with t_d2:
+            with st.form("new_disc"):
+                t_title = st.text_input("Title:")
+                t_cat = st.selectbox("Category:", ["General", "Fundraising", "Legal Navigation", "Trade & Salvage"])
+                t_cont = st.text_area("Content:")
+                if st.form_submit_button("Publish"):
                     conn = sqlite3.connect(DB_FILE)
                     c = conn.cursor()
-                    new_tier = max(curr_user["tier"], 2)
-                    c.execute(
-                        "UPDATE users SET tier=? WHERE username=?",
-                        (new_tier, curr_user["username"]),
-                    )
+                    c.execute("INSERT INTO discussions (author, title, category, content) VALUES (?, ?, ?, ?)", (curr_user['full_name'], t_title, t_cat, t_cont))
                     conn.commit()
                     conn.close()
-                    st.success("🎉 100% Score! You have successfully upgraded to Clearance Tier 2!")
-                    st.session_state["user"]["tier"] = new_tier
+                    st.success("Published!")
+                    st.rerun()
+
+    # 8. TRAINING & TIER UPGRADE
+    elif app_mode == "🎓 Training & Tier Upgrade":
+        st.header("🎓 Interactive Micro-Training & Auto-Tier Unlocking")
+        with st.form("quiz_form"):
+            q1 = st.radio("1. Purpose of 5-Tab Legal Readiness Binders?", ["Random storage", "Standardized proof of compliance for pro se parents", "Lawsuits"])
+            q2 = st.radio("2. Can Good360 items be resold?", ["Yes", "No, strictly prohibited", "Maybe"])
+            if st.form_submit_button("Submit Quiz"):
+                if q1.startswith("Standardized") and q2.startswith("No"):
+                    conn = sqlite3.connect(DB_FILE)
+                    c = conn.cursor()
+                    c.execute("UPDATE users SET tier=2 WHERE username=?", (curr_user['username'],))
+                    conn.commit()
+                    conn.close()
+                    st.success("🎉 Upgraded to Tier 2!")
                     st.rerun()
                 else:
-                    st.error("Some answers were incorrect. Please review the rules and try again!")
+                    st.error("Incorrect answers. Try again!")
 
-    # 6. KUDOS & LEADERBOARD
+    # 9. KUDOS & LEADERBOARD
     elif app_mode == "🌟 Community Kudos & Leaderboard":
-        st.header("🌟 Volunteer Kudos & Monthly Leaderboard")
-
-        col_k1, col_k2 = st.columns(2)
-
-        with col_k1:
-            st.subheader("🏆 Monthly Hours Leaderboard")
+        st.header("🌟 Leaderboard & Kudos")
+        c1, c2 = st.columns(2)
+        with c1:
             conn = sqlite3.connect(DB_FILE)
-            df_lead = pd.read_sql_query(
-                "SELECT full_name, logged_hours, badges FROM users ORDER BY logged_hours DESC LIMIT 5",
-                conn,
-            )
+            st.dataframe(pd.read_sql_query("SELECT full_name, logged_hours, badges FROM users ORDER BY logged_hours DESC", conn), use_container_width=True)
             conn.close()
-            st.dataframe(df_lead, use_container_width=True)
+        with c2:
+            with st.form("kudos"):
+                k_msg = st.text_area("Appreciation Message:")
+                if st.form_submit_button("Send"):
+                    conn = sqlite3.connect(DB_FILE)
+                    c = conn.cursor()
+                    c.execute("INSERT INTO kudos (author, recipient, message) VALUES (?, ?, ?)", (curr_user['full_name'], "Team", k_msg))
+                    conn.commit()
+                    conn.close()
+                    st.success("Kudos sent!")
+                    st.rerun()
 
-        with col_k2:
-            st.subheader("💬 Send Peer Kudos")
-            with st.form("kudos_form"):
-                conn = sqlite3.connect(DB_FILE)
-                recip_df = pd.read_sql_query("SELECT username, full_name FROM users", conn)
-                conn.close()
-
-                k_recip = st.selectbox("Recipient:", recip_df["full_name"].tolist())
-                k_msg = st.text_area("Your Appreciation Message:")
-
-                if st.form_submit_button("Post Kudos"):
-                    if k_msg:
-                        conn = sqlite3.connect(DB_FILE)
-                        c = conn.cursor()
-                        c.execute(
-                            "INSERT INTO kudos (author, recipient, message) VALUES (?, ?, ?)",
-                            (curr_user["full_name"], k_recip, k_msg),
-                        )
-                        conn.commit()
-                        conn.close()
-                        st.success("Kudos message posted!")
-                        st.rerun()
-
-        st.write("---")
-        st.subheader("📣 Recent Community Shout-Outs")
-        conn = sqlite3.connect(DB_FILE)
-        df_kudos_list = pd.read_sql_query(
-            "SELECT author, recipient, message, timestamp FROM kudos ORDER BY id DESC LIMIT 5",
-            conn,
-        )
-        conn.close()
-
-        if df_kudos_list.empty:
-            st.caption("No shout-outs posted yet. Be the first to appreciate a fellow volunteer!")
-        else:
-            for idx, k_row in df_kudos_list.iterrows():
-                msg_text = k_row['message']
-                time_text = k_row['timestamp']
-                st.info(f"🌟 **{k_row['author']}** to **{k_row['recipient']}**: \"{msg_text}\" *({time_text})*")
-
-    # 7. SUGGESTION BOX & SUPPORT CENTER
+    # 10. SUGGESTION BOX & SUPPORT CENTER
     elif app_mode == "💡 Suggestion Box & Support Center":
-        st.header("💡 Suggestion Box & Support Center")
-
-        t_sup1, t_sup2 = st.tabs(["🆘 Request Volunteer Support", "💡 Submit a Suggestion / Idea"])
-
-        with t_sup1:
-            st.subheader("🆘 Need Help or Have a Question?")
-            st.caption("Submit a support ticket directly to our Coordinator team.")
-            
-            with st.form("support_ticket_form"):
-                s_subj = st.text_input("Subject / Task Code:")
-                s_cat = st.selectbox("Issue Category:", ["Task Help / Clarification", "Hours / Credit Inquiry", "Technical / Account Issue", "General Question"])
-                s_msg = st.text_area("Describe what you need help with:")
-
-                if st.form_submit_button("Submit Support Ticket"):
-                    if s_subj and s_msg:
-                        conn = sqlite3.connect(DB_FILE)
-                        c = conn.cursor()
-                        c.execute(
-                            "INSERT INTO support_tickets (volunteer, subject, category, message) VALUES (?, ?, ?, ?)",
-                            (curr_user['username'], s_subj, s_cat, s_msg)
-                        )
-                        conn.commit()
-                        conn.close()
-                        st.success("Support ticket submitted! A coordinator will review it and reply.")
-                        st.rerun()
-
-            st.write("---")
-            st.subheader("📋 Your Open & Past Support Tickets")
-            conn = sqlite3.connect(DB_FILE)
-            my_tickets = pd.read_sql_query("SELECT id, subject, category, status, message, response, timestamp FROM support_tickets WHERE volunteer = ? ORDER BY id DESC", conn, params=(curr_user['username'],))
-            conn.close()
-
-            if my_tickets.empty:
-                st.caption("You have no support tickets.")
-            else:
-                for _, t_row in my_tickets.iterrows():
-                    st.info(f"📌 **[{t_row['category']}] {t_row['subject']}** — Status: `{t_row['status']}`\n\n**Your Request:** {t_row['message']}\n\n**Coordinator Response:** {t_row['response'] if t_row['response'] else 'Pending response...'}")
-
-        with t_sup2:
-            st.subheader("💡 Share Your Ideas with Leadership")
-            st.caption("We value your input! Submit suggestions for portal features, community outreach, or operational improvements.")
-
-            with st.form("suggestion_form"):
-                sug_cat = st.selectbox("Suggestion Category:", ["Portal & Technology", "Outreach & Fundraising", "Volunteer Experience", "Site Operations", "Other Idea"])
-                sug_text = st.text_area("Your Suggestion / Feature Idea:")
-
-                if st.form_submit_button("Send Suggestion"):
-                    if sug_text:
-                        conn = sqlite3.connect(DB_FILE)
-                        c = conn.cursor()
-                        c.execute(
-                            "INSERT INTO suggestions (author, category, suggestion) VALUES (?, ?, ?)",
-                            (curr_user['full_name'], sug_cat, sug_text)
-                        )
-                        conn.commit()
-                        conn.close()
-                        st.success("Thank you! Your suggestion has been sent to our leadership team.")
-                        st.rerun()
-
-    # 8. ONBOARDING (COORDINATORS)
-    elif app_mode == "👥 Volunteer Onboarding":
-        st.header("👥 Volunteer Onboarding & User Management")
-        with st.form("create_user_form"):
-            u1, u2 = st.columns(2)
-            new_user = u1.text_input("New Username:")
-            new_pass = u1.text_input("Set Password:", type="password", value="mom2026")
-            new_name = u1.text_input("Full Name:")
-            new_email = u2.text_input("Email:")
-            new_role = u2.selectbox("Role:", ["Volunteer", "Coordinator"])
-            new_tier = u2.slider("Clearance Tier:", 1, 3, 1)
-
-            if st.form_submit_button("Create Account"):
+        st.header("💡 Support & Suggestions")
+        with st.form("ticket"):
+            s_sub = st.text_input("Subject:")
+            s_msg = st.text_area("Message:")
+            if st.form_submit_button("Send Ticket"):
                 conn = sqlite3.connect(DB_FILE)
                 c = conn.cursor()
-                c.execute(
-                    "INSERT INTO users (username, password_hash, full_name, email, role, tier, logged_hours, badges) VALUES (?, ?, ?, ?, ?, ?, 0.0, '🌱 Active Contributor')",
-                    (
-                        new_user.strip(),
-                        hash_pass(new_pass),
-                        new_name,
-                        new_email,
-                        new_role,
-                        new_tier,
-                    ),
-                )
+                c.execute("INSERT INTO support_tickets (volunteer, subject, message) VALUES (?, ?, ?)", (curr_user['username'], s_sub, s_msg))
                 conn.commit()
                 conn.close()
-                st.success(f"Account for {new_name} created!")
+                st.success("Ticket submitted!")
+                st.rerun()
 
-    # 9. COORDINATOR COMMAND CENTER (VIEW A + MANAGING TICKETS & ANNOUNCEMENTS)
-    elif app_mode == "🛠️ Coordinator Command Center":
+    # 11. ONBOARDING (COORDINATORS)
+    elif app_mode == "👥 Volunteer Onboarding" and curr_user["role"] in ["Coordinator", "Admin"]:
+        st.header("👥 Volunteer Onboarding")
+        with st.form("onboard"):
+            un = st.text_input("Username:")
+            pw = st.text_input("Password:", type="password", value="mom2026")
+            fn = st.text_input("Full Name:")
+            em = st.text_input("Email:")
+            if st.form_submit_button("Create"):
+                conn = sqlite3.connect(DB_FILE)
+                c = conn.cursor()
+                c.execute("INSERT INTO users (username, password_hash, full_name, email, role, tier, logged_hours) VALUES (?, ?, ?, ?, 'Volunteer', 1, 0.0)", (un, hash_pass(pw), fn, em))
+                conn.commit()
+                conn.close()
+                st.success("Account created!")
+
+    # 12. COORDINATOR COMMAND CENTER
+    elif app_mode == "🛠️ Coordinator Command Center" and curr_user["role"] in ["Coordinator", "Admin"]:
         st.header("🛠️ Coordinator Command Center")
-
-        t_cmd1, t_cmd2, t_cmd3, t_cmd4, t_cmd5 = st.tabs(["📝 Intake & Review Hub", "📢 Publish News & Calendar", "🆘 Support Tickets", "💡 Volunteer Suggestions", "📊 Google Sheets & Export"])
-
-        # TAB 1: INTAKE & REVIEW
-        with t_cmd1:
-            col_c1, col_c2 = st.columns(2)
-
-            with col_c1:
-                st.subheader("➕ Intake & Task Creation")
-                raw_text = st.text_area("📝 Paste Raw Request / Email Copy Here (Optional):", placeholder="Paste email or text request copy here...")
-
-                with st.form("pub_form_col1"):
-                    p_code = st.text_input("Task ID Code:", placeholder="e.g. FUND-102")
-                    p_title = st.text_input("Task Title:")
-                    p_cat = st.selectbox(
-                        "Functional Category:",
-                        [
-                            "Community Outreach & Fundraising",
-                            "Civil Legal Navigation",
-                            "Heritage Trade & Logistics",
-                            "Marketing & Web Copy",
-                            "Grants & Administration",
-                            "Site Operations & Facilities"
-                        ]
-                    )
-                    p_site = st.selectbox(
-                        "Site Node Location:",
-                        [
-                            "Node 1: Dyer St Plaza Hub (Malvern)",
-                            "Node 2: Chandler Rd Campus (Traskwood)",
-                            "Node 3: Industrial Rd Trade Yard (Malvern)",
-                            "Node 4: Mountainaire Historic District (Hot Springs)",
-                            "Node 5: Leola Satellite Division (Grant Co)",
-                            "Node 6: Army-Navy Hospital Campus (Hot Springs)",
-                            "Node 7: Former Majestic Hotel Site (Hot Springs)",
-                        ],
-                    )
-                    p_mod = st.selectbox(
-                        "Operational Module:",
-                        [
-                            "Civil Legal Navigation (ANN)",
-                            "Safe Family Contact (PRISM)",
-                            "Heritage Trade & Salvage (AHTA)",
-                            "Micro-Transit & Fleet (ATMS)",
-                            "Technology Lab & Services",
-                            "Grants & Master Administration",
-                        ],
-                    )
-                    p_tier = st.slider("Required Clearance Tier:", 1, 3, 1)
-                    p_hrs = st.number_input("Service Hours Credit:", value=2.0, step=0.5)
-                    p_why = st.text_area("Why This Matters (Context):", value=raw_text if raw_text else "")
-                    p_inst = st.text_area("Step-by-Step Instructions:")
-                    p_deliv = st.text_area("Expected Deliverable Description:")
-
-                    p_file = st.file_uploader("Attach Reference Resource File (Optional):", type=["pdf", "docx", "xlsx", "csv", "png", "jpg", "zip", "txt"])
-
-                    if st.form_submit_button("Publish Task to Marketplace"):
-                        if not p_code or not p_title:
-                            st.error("Task Code and Title are required!")
-                        else:
-                            saved_path, saved_name = "", ""
-                            if p_file is not None:
-                                saved_name = p_file.name
-                                saved_path = os.path.join(UPLOAD_DIR, f"{p_code}_{saved_name}")
-                                with open(saved_path, "wb") as f:
-                                    f.write(p_file.getbuffer())
-
-                            conn = sqlite3.connect(DB_FILE)
-                            c = conn.cursor()
-                            c.execute(
-                                """
-                                INSERT INTO tasks (task_code, title, category, site_node, module, tier_required, time_est, file_path, file_name, why_it_matters, instructions, expected_deliverable)
-                                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                                """,
-                                (p_code, p_title, p_cat, p_site, p_mod, p_tier, p_hrs, saved_path, saved_name, p_why, p_inst, p_deliv),
-                            )
-                            conn.commit()
-                            conn.close()
-                            st.success(f"Task {p_code} published!")
-                            st.rerun()
-
-            with col_c2:
-                st.subheader("👥 Dynamic Task Assignment & Review")
+        t_c1, t_c2, t_c3 = st.tabs(["📝 Task Management", "📊 Google Sheets Sync", "📅 Event Manager"])
+        with t_c1:
+            with st.form("new_task"):
+                tc = st.text_input("Task Code (e.g. FUND-103):")
+                tt = st.text_input("Title:")
+                t_cat = st.selectbox("Category:", ["Community Outreach & Fundraising", "Civil Legal Navigation", "Heritage Trade & Logistics"])
+                t_hrs = st.number_input("Hours Estimate:", value=2.0)
+                t_why = st.text_area("Why This Matters:")
+                t_ins = st.text_area("Instructions:")
+                t_del = st.text_area("Expected Deliverable:")
+                if st.form_submit_button("Publish Task"):
+                    conn = sqlite3.connect(DB_FILE)
+                    c = conn.cursor()
+                    c.execute("INSERT INTO tasks (task_code, title, category, site_node, module, tier_required, time_est, why_it_matters, instructions, expected_deliverable) VALUES (?, ?, ?, 'Node 1', 'Admin', 1, ?, ?, ?, ?)", (tc, tt, t_cat, t_hrs, t_why, t_ins, t_del))
+                    conn.commit()
+                    conn.close()
+                    st.success("Task published!")
+                    st.rerun()
+        with t_c2:
+            if st.button("Sync Users to Google Sheets"):
                 conn = sqlite3.connect(DB_FILE)
-                active_tasks = pd.read_sql_query("SELECT id, task_code, title, category, status, assigned_volunteer FROM tasks WHERE status != 'Approved & Completed'", conn)
-                volunteers_df = pd.read_sql_query("SELECT username, full_name, tier FROM users WHERE role = 'Volunteer'", conn)
+                df_u = pd.read_sql_query("SELECT username, full_name, email, role, tier, logged_hours FROM users", conn)
                 conn.close()
-
-                st.markdown("#### ⚡ Manual Task Assignment Override")
-                if not active_tasks.empty and not volunteers_df.empty:
-                    with st.form("manual_assign_form"):
-                        task_choice = st.selectbox(
-                            "Select Active Task to Assign:",
-                            active_tasks["id"].tolist(),
-                            format_func=lambda tid: f"[{active_tasks.loc[active_tasks['id']==tid, 'task_code'].values[0]}] {active_tasks.loc[active_tasks['id']==tid, 'title'].values[0]} ({active_tasks.loc[active_tasks['id']==tid, 'status'].values[0]})"
-                        )
-                        vol_choice = st.selectbox(
-                            "Select Volunteer to Assign:",
-                            volunteers_df["username"].tolist(),
-                            format_func=lambda uname: f"{volunteers_df.loc[volunteers_df['username']==uname, 'full_name'].values[0]} (@{uname})"
-                        )
-                        if st.form_submit_button("Assign Task Directly"):
-                            conn = sqlite3.connect(DB_FILE)
-                            c = conn.cursor()
-                            c.execute("UPDATE tasks SET status='Claimed / In Progress', assigned_volunteer=? WHERE id=?", (vol_choice, task_choice))
-                            conn.commit()
-                            conn.close()
-                            st.success(f"Task assigned directly to {vol_choice}!")
-                            st.rerun()
-
-                st.write("---")
-                st.markdown("#### 📥 Review Submissions & Award Hours")
-                conn = sqlite3.connect(DB_FILE)
-                df_rev = pd.read_sql_query("SELECT * FROM tasks WHERE status = 'Submitted / Under Review'", conn)
-                conn.close()
-
-                if df_rev.empty:
-                    st.info("No submissions currently pending review.")
-                else:
-                    for idx, r_row in df_rev.iterrows():
-                        with st.container():
-                            st.markdown(f"**[{r_row['task_code']}] {r_row['title']}** — Submitted by **@{r_row['assigned_volunteer']}**")
-                            st.write(f"**Time Credit:** {r_row['time_est']} Hrs | **Category:** {r_row['category']}")
-                            st.markdown(f"**Submitted Notes / Contact List:**\n```\n{r_row['submission_notes']}\n```")
-
-                            if r_row["proof_file_path"] and os.path.exists(r_row["proof_file_path"]):
-                                with open(r_row["proof_file_path"], "rb") as pf:
-                                    st.download_button(
-                                        label=f"📎 Download Proof File ({r_row['proof_file_name']})",
-                                        data=pf.read(),
-                                        file_name=r_row["proof_file_name"],
-                                        mime="application/octet-stream",
-                                        key=f"proof_dl_{r_row['id']}"
-                                    )
-
-                            col_rev1, col_rev2 = st.columns(2)
-                            if col_rev1.button(f"✅ Approve & Award {r_row['time_est']} Hrs", key=f"app_{r_row['id']}"):
-                                conn = sqlite3.connect(DB_FILE)
-                                c = conn.cursor()
-                                if "FUND" in r_row["task_code"]:
-                                    c.execute("UPDATE tasks SET status='Open', assigned_volunteer=NULL, submission_notes=NULL WHERE id=?", (r_row['id'],))
-                                else:
-                                    c.execute("UPDATE tasks SET status='Approved & Completed' WHERE id=?", (r_row['id'],))
-
-                                c.execute("UPDATE users SET logged_hours = logged_hours + ? WHERE username=?", (r_row["time_est"], r_row["assigned_volunteer"]))
-                                conn.commit()
-                                conn.close()
-                                st.success(f"Approved! {r_row['time_est']} hours credited to @{r_row['assigned_volunteer']}.")
-                                st.rerun()
-
-                            if col_rev2.button("🔄 Return to Open", key=f"reopen_{r_row['id']}"):
-                                conn = sqlite3.connect(DB_FILE)
-                                c = conn.cursor()
-                                c.execute("UPDATE tasks SET status='Open', assigned_volunteer=NULL WHERE id=?", (r_row['id'],))
-                                conn.commit()
-                                conn.close()
-                                st.warning("Task returned to Open status.")
-                                st.rerun()
-
-        # TAB 2: PUBLISH NEWS & CALENDAR
-        with t_cmd2:
-            col_nc1, col_nc2 = st.columns(2)
-
-            with col_nc1:
-                st.subheader("📢 Post Official Announcement")
-                with st.form("post_announcement_form"):
-                    ann_title = st.text_input("Announcement Title:")
-                    ann_cat = st.selectbox("Category:", ["General Announcement", "Organization Update", "Urgent Call to Action", "Event Highlight"])
-                    ann_body = st.text_area("Announcement Content:")
-                    if st.form_submit_button("Publish Announcement"):
-                        if ann_title and ann_body:
-                            date_str = pd.Timestamp.now().strftime("%Y-%m-%d")
-                            conn = sqlite3.connect(DB_FILE)
-                            c = conn.cursor()
-                            c.execute("INSERT INTO announcements (title, content, date_posted, category) VALUES (?, ?, ?, ?)", (ann_title, ann_body, date_str, ann_cat))
-                            conn.commit()
-                            conn.close()
-                            st.success("Announcement published!")
-                            st.rerun()
-
-            with col_nc2:
-                st.subheader("📅 Add Calendar Event")
-                with st.form("add_event_form"):
-                    evt_title = st.text_input("Event Title:")
-                    evt_date = st.date_input("Event Date:")
-                    evt_time = st.text_input("Time String:", value="6:00 PM - 7:30 PM")
-                    evt_loc = st.text_input("Location:", value="Node 1: Plaza Hub / Virtual Zoom")
-                    evt_desc = st.text_area("Description / Details:")
-                    if st.form_submit_button("Add Event to Calendar"):
-                        if evt_title:
-                            conn = sqlite3.connect(DB_FILE)
-                            c = conn.cursor()
-                            c.execute("INSERT INTO calendar_events (title, event_date, time_str, location, description) VALUES (?, ?, ?, ?, ?)", (evt_title, str(evt_date), evt_time, evt_loc, evt_desc))
-                            conn.commit()
-                            conn.close()
-                            st.success("Event added to Calendar!")
-                            st.rerun()
-
-        # TAB 3: SUPPORT TICKETS
-        with t_cmd3:
-            st.subheader("🆘 Manage Volunteer Support Tickets")
-            conn = sqlite3.connect(DB_FILE)
-            tickets_df = pd.read_sql_query("SELECT id, volunteer, subject, category, message, status, response, timestamp FROM support_tickets ORDER BY id DESC", conn)
-            conn.close()
-
-            if tickets_df.empty:
-                st.info("No support tickets submitted.")
-            else:
-                for _, tk in tickets_df.iterrows():
-                    with st.expander(f"📌 Ticket #{tk['id']}: [{tk['category']}] {tk['subject']} (by @{tk['volunteer']}) — Status: {tk['status']}"):
-                        st.write(f"**Volunteer Message:** {tk['message']}")
-                        st.caption(f"Submitted on: {tk['timestamp']}")
-                        
-                        with st.form(key=f"resp_ticket_form_{tk['id']}"):
-                            t_resp = st.text_area("Write Response to Volunteer:", value=tk['response'] if tk['response'] else "")
-                            t_stat = st.selectbox("Update Status:", ["Open / Pending", "In Progress", "Resolved / Closed"], index=2 if tk['status']=="Resolved / Closed" else 0)
-                            if st.form_submit_button("Send Response & Update Ticket"):
-                                conn = sqlite3.connect(DB_FILE)
-                                c = conn.cursor()
-                                c.execute("UPDATE support_tickets SET response=?, status=? WHERE id=?", (t_resp, t_stat, tk['id']))
-                                conn.commit()
-                                conn.close()
-                                st.success("Ticket updated!")
-                                st.rerun()
-
-        # TAB 4: SUGGESTIONS
-        with t_cmd4:
-            st.subheader("💡 Review Volunteer Suggestions & Ideas")
-            conn = sqlite3.connect(DB_FILE)
-            sug_df = pd.read_sql_query("SELECT id, author, category, suggestion, status, timestamp FROM suggestions ORDER BY id DESC", conn)
-            conn.close()
-
-            if sug_df.empty:
-                st.info("No suggestions submitted yet.")
-            else:
-                st.dataframe(sug_df, use_container_width=True)
+                succ, msg = sync_to_gsheets("Users", df_u)
+                if succ: st.success(msg)
+                else: st.error(msg)
+        with t_c3:
+            with st.form("add_event"):
+                e_title = st.text_input("Event Title:")
+                e_date = st.date_input("Event Date:")
+                e_time = st.text_input("Time:", value="6:00 PM")
+                e_loc = st.text_input("Location:")
+                e_desc = st.text_area("Description:")
+                if st.form_submit_button("Add Event"):
+                    conn = sqlite3.connect(DB_FILE)
+                    c = conn.cursor()
+                    c.execute("INSERT INTO calendar_events (title, event_date, time_str, location, description) VALUES (?, ?, ?, ?, ?)", (e_title, str(e_date), e_time, e_loc, e_desc))
+                    conn.commit()
+                    conn.close()
+                    st.success("Event added!")
+                    st.rerun()
