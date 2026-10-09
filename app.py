@@ -135,6 +135,9 @@ def generate_pdf_letter(full_name, username, total_hours, tier, badges):
     return pdf.output()
 
 
+# Cache database initialization across Streamlit reruns so table creation and initial seeding
+# execute only once per process lifetime instead of on every user interaction / script rerun.
+@st.cache_resource
 def init_db():
     conn = sqlite3.connect(DB_FILE)
     c = conn.cursor()
@@ -271,6 +274,13 @@ def init_db():
             timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
         )
     """)
+
+    # Database performance optimization: Create indexes on frequently queried columns
+    # to convert O(N) full table scans into fast O(log N) index lookups.
+    c.execute("CREATE INDEX IF NOT EXISTS idx_tasks_tier_status ON tasks(tier_required, status)")
+    c.execute("CREATE INDEX IF NOT EXISTS idx_tasks_assigned ON tasks(assigned_volunteer)")
+    c.execute("CREATE INDEX IF NOT EXISTS idx_messages_sender_recipient ON messages(sender, recipient)")
+    c.execute("CREATE INDEX IF NOT EXISTS idx_discussion_replies_disc_id ON discussion_replies(discussion_id)")
 
     # Seed Default Users
     c.execute("SELECT COUNT(*) FROM users")
