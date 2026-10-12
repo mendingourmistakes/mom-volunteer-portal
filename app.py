@@ -51,6 +51,11 @@ def clean_pdf_text(text):
     return text.encode("latin-1", "ignore").decode("latin-1").strip()
 
 
+# Performance Optimization: Cache PDF letter byte generation using Streamlit's cache_data decorator.
+# Generating PDFs using FPDF involves document setup, font metrics, text cleaning, and layout rendering.
+# Caching this result avoids running PDF generation (~16ms CPU time) on every Streamlit rerun when
+# users interact with UI widgets in the Task Marketplace.
+@st.cache_data
 def generate_pdf_letter(full_name, username, total_hours, tier, badges):
     pdf = FPDF()
     pdf.add_page()
@@ -271,6 +276,14 @@ def init_db():
             timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
         )
     """)
+
+    # Performance Optimization: Create SQLite indexes on frequently queried and filtered columns.
+    # Prevents full table scans when filtering task boards, discussion threads, messages, and support tickets.
+    c.execute("CREATE INDEX IF NOT EXISTS idx_tasks_tier_status ON tasks(tier_required, status)")
+    c.execute("CREATE INDEX IF NOT EXISTS idx_tasks_assigned ON tasks(assigned_volunteer)")
+    c.execute("CREATE INDEX IF NOT EXISTS idx_discussion_replies_disc_id ON discussion_replies(discussion_id)")
+    c.execute("CREATE INDEX IF NOT EXISTS idx_messages_participants ON messages(sender, recipient)")
+    c.execute("CREATE INDEX IF NOT EXISTS idx_support_tickets_volunteer ON support_tickets(volunteer)")
 
     # Seed Default Users
     c.execute("SELECT COUNT(*) FROM users")
