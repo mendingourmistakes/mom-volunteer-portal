@@ -272,6 +272,10 @@ def init_db():
         )
     """)
 
+    # Create indexes for foreign key / search performance
+    c.execute("CREATE INDEX IF NOT EXISTS idx_discussion_replies_discussion_id ON discussion_replies(discussion_id)")
+    c.execute("CREATE INDEX IF NOT EXISTS idx_tasks_assigned_volunteer ON tasks(assigned_volunteer)")
+
     # Seed Default Users
     c.execute("SELECT COUNT(*) FROM users")
     if c.fetchone()[0] == 0:
@@ -929,7 +933,21 @@ else:
         with t_disc1:
             conn = sqlite3.connect(DB_FILE)
             discussions_df = pd.read_sql_query("SELECT id, author, title, category, content, timestamp FROM discussions ORDER BY id DESC", conn)
+
+            # ⚡ Performance Optimization (Bolt):
+            # Fetch all discussion replies in a single batch query instead of querying inside the iterrows loop (N+1 query problem).
+            # This avoids N connection/query overheads and speeds up rendering significantly.
+            all_replies_df = pd.read_sql_query(
+                "SELECT discussion_id, author, content, timestamp FROM discussion_replies ORDER BY id ASC",
+                conn
+            )
             conn.close()
+
+            replies_by_discussion = (
+                {disc_id: group for disc_id, group in all_replies_df.groupby("discussion_id")}
+                if not all_replies_df.empty
+                else {}
+            )
 
             if discussions_df.empty:
                 st.info("No discussion topics posted yet. Be the first to start a topic!")
@@ -939,14 +957,8 @@ else:
                         st.markdown(d_row['content'])
                         st.write("---")
                         
-                        # Fetch Replies
-                        conn = sqlite3.connect(DB_FILE)
-                        replies_df = pd.read_sql_query(
-                            "SELECT author, content, timestamp FROM discussion_replies WHERE discussion_id = ? ORDER BY id ASC",
-                            conn,
-                            params=(d_row['id'],)
-                        )
-                        conn.close()
+                        # Fetch Replies from pre-grouped dictionary
+                        replies_df = replies_by_discussion.get(d_row['id'], pd.DataFrame())
 
                         st.markdown("**Replies:**")
                         if replies_df.empty:
