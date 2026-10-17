@@ -929,6 +929,21 @@ else:
         with t_disc1:
             conn = sqlite3.connect(DB_FILE)
             discussions_df = pd.read_sql_query("SELECT id, author, title, category, content, timestamp FROM discussions ORDER BY id DESC", conn)
+
+            # Bolt Optimization: Batch query discussion replies in a single database roundtrip
+            # to eliminate the N+1 query overhead per discussion item (O(1) queries instead of O(N)).
+            replies_by_disc = {}
+            if not discussions_df.empty:
+                disc_ids = discussions_df["id"].tolist()
+                placeholders = ",".join("?" * len(disc_ids))
+                all_replies_df = pd.read_sql_query(
+                    f"SELECT discussion_id, author, content, timestamp FROM discussion_replies WHERE discussion_id IN ({placeholders}) ORDER BY id ASC",
+                    conn,
+                    params=disc_ids
+                )
+                if not all_replies_df.empty:
+                    for disc_id, group in all_replies_df.groupby("discussion_id"):
+                        replies_by_disc[disc_id] = group
             conn.close()
 
             if discussions_df.empty:
@@ -939,14 +954,9 @@ else:
                         st.markdown(d_row['content'])
                         st.write("---")
                         
-                        # Fetch Replies
-                        conn = sqlite3.connect(DB_FILE)
-                        replies_df = pd.read_sql_query(
-                            "SELECT author, content, timestamp FROM discussion_replies WHERE discussion_id = ? ORDER BY id ASC",
-                            conn,
-                            params=(d_row['id'],)
-                        )
-                        conn.close()
+                        # Fetch cached replies from batch query map
+                        disc_id = d_row['id']
+                        replies_df = replies_by_disc.get(disc_id, pd.DataFrame())
 
                         st.markdown("**Replies:**")
                         if replies_df.empty:
