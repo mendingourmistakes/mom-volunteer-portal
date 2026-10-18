@@ -272,6 +272,16 @@ def init_db():
         )
     """)
 
+    # Performance Optimization: Add database indexes on frequently queried/filtered/sorted columns.
+    # Prevents full table scans (SCAN TABLE) during Streamlit page re-renders and reduces lookup time from O(N) to O(log N).
+    c.execute("CREATE INDEX IF NOT EXISTS idx_tasks_status ON tasks(status)")
+    c.execute("CREATE INDEX IF NOT EXISTS idx_tasks_assigned_volunteer ON tasks(assigned_volunteer)")
+    c.execute("CREATE INDEX IF NOT EXISTS idx_discussion_replies_discussion_id ON discussion_replies(discussion_id)")
+    c.execute("CREATE INDEX IF NOT EXISTS idx_messages_sender_recipient ON messages(sender, recipient)")
+    c.execute("CREATE INDEX IF NOT EXISTS idx_support_tickets_volunteer ON support_tickets(volunteer)")
+    c.execute("CREATE INDEX IF NOT EXISTS idx_users_logged_hours ON users(logged_hours DESC)")
+    c.execute("CREATE INDEX IF NOT EXISTS idx_users_role ON users(role)")
+
     # Seed Default Users
     c.execute("SELECT COUNT(*) FROM users")
     if c.fetchone()[0] == 0:
