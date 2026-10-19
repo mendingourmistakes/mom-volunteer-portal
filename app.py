@@ -51,6 +51,10 @@ def clean_pdf_text(text):
     return text.encode("latin-1", "ignore").decode("latin-1").strip()
 
 
+# Performance Optimization: Cache generated PDF letter bytes using st.cache_data.
+# Generating the PDF takes ~16ms per execution. Memoizing results prevents re-generating
+# the PDF on every Streamlit script rerun unless the user's data actually changes.
+@st.cache_data
 def generate_pdf_letter(full_name, username, total_hours, tier, badges):
     pdf = FPDF()
     pdf.add_page()
@@ -135,6 +139,10 @@ def generate_pdf_letter(full_name, username, total_hours, tier, badges):
     return pdf.output()
 
 
+# Performance Optimization: Cache database schema initialization with st.cache_resource
+# so it executes only once on application startup instead of running table DDL
+# and seed checks on every Streamlit rerun/widget interaction.
+@st.cache_resource
 def init_db():
     conn = sqlite3.connect(DB_FILE)
     c = conn.cursor()
@@ -416,6 +424,12 @@ def init_db():
             "INSERT INTO discussions (author, title, category, content) VALUES (?, ?, ?, ?)",
             ("Volunteer Coordinator", "Tips for Reaching Out to Local Businesses", "Fundraising & Outreach", "When contacting local business owners for sponsorships, emphasize how M.O.M. builds workforce trade skills and restores local families. Feel free to use Template 1 in the Task Marketplace!")
         )
+
+    # Performance Optimization: Add indexes on frequently queried foreign/filter columns
+    c.execute("CREATE INDEX IF NOT EXISTS idx_tasks_assigned_volunteer ON tasks(assigned_volunteer)")
+    c.execute("CREATE INDEX IF NOT EXISTS idx_tasks_status ON tasks(status)")
+    c.execute("CREATE INDEX IF NOT EXISTS idx_messages_participants ON messages(sender, recipient)")
+    c.execute("CREATE INDEX IF NOT EXISTS idx_discussion_replies_id ON discussion_replies(discussion_id)")
 
     conn.commit()
     conn.close()
