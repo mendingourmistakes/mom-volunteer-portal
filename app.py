@@ -51,6 +51,8 @@ def clean_pdf_text(text):
     return text.encode("latin-1", "ignore").decode("latin-1").strip()
 
 
+# Cache PDF generation per user data inputs using st.cache_data to avoid costly PDF re-rendering on every Streamlit script rerun.
+@st.cache_data
 def generate_pdf_letter(full_name, username, total_hours, tier, badges):
     pdf = FPDF()
     pdf.add_page()
@@ -135,6 +137,8 @@ def generate_pdf_letter(full_name, username, total_hours, tier, badges):
     return pdf.output()
 
 
+# Cache DB initialization with st.cache_resource so database creation, schema checks, and table seeding execute once across app re-runs.
+@st.cache_resource
 def init_db():
     conn = sqlite3.connect(DB_FILE)
     c = conn.cursor()
