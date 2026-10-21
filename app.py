@@ -135,6 +135,9 @@ def generate_pdf_letter(full_name, username, total_hours, tier, badges):
     return pdf.output()
 
 
+# Cache DB initialization so schema creation & seed checks only run once at app startup,
+# preventing redundant SQLite queries on every Streamlit script rerun.
+@st.cache_resource
 def init_db():
     conn = sqlite3.connect(DB_FILE)
     c = conn.cursor()
