@@ -135,6 +135,9 @@ def generate_pdf_letter(full_name, username, total_hours, tier, badges):
     return pdf.output()
 
 
+# Bolt Performance Optimization: Caching init_db() prevents running 11 CREATE TABLE statements
+# and 5 COUNT seed queries on every Streamlit script rerun/user interaction.
+@st.cache_resource
 def init_db():
     conn = sqlite3.connect(DB_FILE)
     c = conn.cursor()
@@ -271,6 +274,14 @@ def init_db():
             timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
         )
     """)
+
+    # Bolt Performance Optimization: Indexes for frequently queried fields in SQLite queries.
+    # Speeds up filtering tasks by volunteer/status, searching messages, support tickets, and discussion replies.
+    c.execute("CREATE INDEX IF NOT EXISTS idx_tasks_assigned_volunteer ON tasks(assigned_volunteer)")
+    c.execute("CREATE INDEX IF NOT EXISTS idx_tasks_status ON tasks(status)")
+    c.execute("CREATE INDEX IF NOT EXISTS idx_messages_sender_recipient ON messages(sender, recipient)")
+    c.execute("CREATE INDEX IF NOT EXISTS idx_discussion_replies_discussion_id ON discussion_replies(discussion_id)")
+    c.execute("CREATE INDEX IF NOT EXISTS idx_support_tickets_volunteer ON support_tickets(volunteer)")
 
     # Seed Default Users
     c.execute("SELECT COUNT(*) FROM users")
