@@ -1,0 +1,3 @@
+## 2026-03-31 - Cache Database Initialization & Add Query Indexes in Streamlit
+**Learning:** Streamlit re-executes the entire script on every user interaction/rerun. Running `init_db()` unconditionally causes 11 `CREATE TABLE IF NOT EXISTS` DDL statements and 5 `SELECT COUNT(*)` queries on every button press/input. Decorating `init_db()` with `@st.cache_resource` skips redundant DB setup across script reruns while indexes speed up filtering queries.
+**Action:** Always use `@st.cache_resource` for database initialization functions and ensure SQLite columns used in `WHERE` clauses have explicit indexes.
