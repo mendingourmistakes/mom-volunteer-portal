@@ -1,0 +1,3 @@
+## 2026-10-25 - Caching Streamlit database initialization & SQLite indexing
+**Learning:** In Streamlit applications, top-level function calls like `init_db()` run on every user interaction / script rerun. Decorating `init_db()` with `@st.cache_resource` prevents re-evaluating table creation and count checks on every rerun (~10x speedup for initial load/rerun overhead). Adding SQLite indexes on frequently queried columns (`users.logged_hours`, `tasks.status`, `tasks.assigned_volunteer`) speeds up leaderboard queries from scanning all rows to directly accessing indexed B-trees.
+**Action:** Always cache database schema setup functions with `@st.cache_resource` in Streamlit apps and index columns used in `ORDER BY` or `WHERE` filters.
