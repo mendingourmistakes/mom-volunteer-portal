@@ -135,6 +135,8 @@ def generate_pdf_letter(full_name, username, total_hours, tier, badges):
     return pdf.output()
 
 
+# Bolt Optimization: Cache single database schema initialization across Streamlit reruns
+@st.cache_resource
 def init_db():
     conn = sqlite3.connect(DB_FILE)
     c = conn.cursor()
@@ -271,6 +273,11 @@ def init_db():
             timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
         )
     """)
+
+    # Bolt Optimization: Create database indexes on frequently queried/sorted columns
+    c.execute("CREATE INDEX IF NOT EXISTS idx_users_logged_hours ON users(logged_hours DESC)")
+    c.execute("CREATE INDEX IF NOT EXISTS idx_tasks_status ON tasks(status)")
+    c.execute("CREATE INDEX IF NOT EXISTS idx_tasks_assigned ON tasks(assigned_volunteer)")
 
     # Seed Default Users
     c.execute("SELECT COUNT(*) FROM users")
