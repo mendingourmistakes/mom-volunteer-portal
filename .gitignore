@@ -1,0 +1,4 @@
+__pycache__/
+*.pyc
+mom_volunteers.db
+uploaded_resources/
