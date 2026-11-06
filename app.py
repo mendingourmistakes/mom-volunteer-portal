@@ -51,6 +51,11 @@ def clean_pdf_text(text):
     return text.encode("latin-1", "ignore").decode("latin-1").strip()
 
 
+# Optimization: Cache PDF generation across Streamlit reruns.
+# PDF generation with fpdf2 is CPU-intensive (~15-18ms). Caching with @st.cache_data
+# ensures that repeated page renders or interactions do not repeatedly reconstruct
+# the binary PDF when the user credentials/stats have not changed.
+@st.cache_data
 def generate_pdf_letter(full_name, username, total_hours, tier, badges):
     pdf = FPDF()
     pdf.add_page()
@@ -135,6 +140,10 @@ def generate_pdf_letter(full_name, username, total_hours, tier, badges):
     return pdf.output()
 
 
+# Optimization: Cache DB schema initialization to run only once per session / process.
+# Avoids redundant DDL (CREATE TABLE IF NOT EXISTS) and initial count checks across 11 tables
+# on every single Streamlit script rerun.
+@st.cache_resource
 def init_db():
     conn = sqlite3.connect(DB_FILE)
     c = conn.cursor()
@@ -722,7 +731,7 @@ else:
                         # Task Release Button
                         col_rel1, col_rel2 = st.columns([1, 2])
                         with col_rel1:
-                            if st.button(f"↩️ Release Task Back to Marketplace", key=f"rel_{row['id']}"):
+                            if st.button("↩️ Release Task Back to Marketplace", key=f"rel_{row['id']}"):
                                 conn = sqlite3.connect(DB_FILE)
                                 c = conn.cursor()
                                 c.execute(
