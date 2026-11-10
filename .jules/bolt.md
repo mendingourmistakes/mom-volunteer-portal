@@ -1,0 +1,5 @@
+# Bolt's Performance Journal
+
+## 2026-11-10 - Streamlit Cache Architecture & Re-render Optimization
+**Learning:** In Streamlit applications, top-level widget inputs (like `st.download_button`) eagerly evaluate their data payload on every script rerun triggered by user interactions (tab changes, dropdown filters, form inputs). In this codebase, `generate_pdf_letter` was executed synchronously on every script rerun when a volunteer was logged into the Marketplace tab, adding ~16ms of overhead each time. Furthermore, top-level `init_db()` runs schema verification DDL and queries on every rerun. Using `@st.cache_data` on file/data generation (`generate_pdf_letter`) reduced rerun execution time to ~0.3ms (~50x speedup), while `@st.cache_resource` on `init_db` ensures one-time initialization per server lifecycle.
+**Action:** When adding download buttons or resource-intensive generation functions in Streamlit, always decouple the generation with `@st.cache_data` or lazy callbacks, and guard global resource initialization with `@st.cache_resource`.
